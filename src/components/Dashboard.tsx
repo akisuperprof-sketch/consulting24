@@ -1188,6 +1188,13 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         ) : (
                             <>
                                 <button
+                                    onClick={() => setShowExportMenu(true)}
+                                    className="hidden lg:flex items-center px-4 py-2 bg-slate-900 text-white rounded-full text-xs font-bold hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
+                                >
+                                    <FileText size={16} className="mr-2" />
+                                    全体レポート出力
+                                </button>
+                                <button
                                     onClick={() => setShowHelp(true)}
                                     className="p-2 text-slate-400 hover:text-indigo-600 transition-colors mr-1"
                                     title="使い方ガイド"
