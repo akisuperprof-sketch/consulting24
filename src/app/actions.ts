@@ -182,47 +182,64 @@ ${Object.values(MODULES).map(m => `- ${m.id}: ${m.name} (${m.description})`).joi
     "assumptions": ["前提1", "前提2"]
   },
   "m10Data": {
-    "marketSize": "市場規模",
-    "growthRate": "成長率",
-    "competitors": [{ "name": "競合A", "share": 30, "strength": "強み" }],
-    "trends": ["トレンド1"]
+    "marketAnalysis": [{ "factor": "PEST分析要素", "impact": "影響", "source": "出典" }],
+    "competitors": [{ "name": "競合A", "share": 30, "strength": "強み", "weakness": "弱み", "strategy": "対抗策" }],
+    "trends": [{ "keyword": "トレンド", "growth": "成長率", "platform": "媒体", "reasoning": "理由" }],
+    "evidence": [{ "title": "タイトル", "url": "URL", "date": "日付" }]
+  },
+  "m12Data": {
+    "trendingKeywords": [{ "word": "KW", "volume": "Vol", "growth": "率" }],
+    "relatedQueries": ["クエリ1"],
+    "platformStrategy": [{ "platform": "媒体", "approach": "アプローチ" }]
   },
   "m20Data": {
-    "targetPersona": "人物像",
-    "coreValue": "強み",
-    "channels": ["媒体"],
-    "actionPlans": [{ "task": "タスク", "priority": "High" }]
+    "targetPersona": { 
+        "profile": "人物像詳細", 
+        "painPoints": ["悩み1", "悩み2"], 
+        "gainPoints": ["理想1", "理想2"] 
+    },
+    "strategy": { 
+        "coreValue": "コアバリュー", 
+        "channels": ["集客チャネル"], 
+        "pricing": "価格戦略" 
+    },
+    "salesFlow": [{ "step": "ステップ名", "purpose": "目的", "script": "トークスクリプト" }],
+    "actionPlans": [{ "task": "タスク", "priority": "High", "deadline": "期限" }]
   },
   "m30Data": {
-    "plSimulation": [{ "year": 1, "revenue": 100, "profit": 10 }],
-    "milestones": [{ "phase": "開発", "date": "Q1", "event": "マイルストーン" }],
-    "fundingNeeds": "資金ニーズ"
+    "executiveSummary": "事業サマリ",
+    "plSimulation": [{ "year": 1, "revenue": 1000, "profit": 100, "note": "メモ" }],
+    "milestones": [{ "phase": "フェーズ", "date": "時期", "event": "イベント", "requirement": "要件" }],
+    "fundingPlan": [{ "method": "調達方法", "amount": "金額", "institutionalSupport": "制度" }],
+    "teamProfile": [{ "role": "役割", "background": "経歴", "strength": "強み" }],
+    "riskAnalysis": [{ "factor": "リスク要因", "impact": "影響度", "solution": "対策" }]
   },
   "m40Data": {
-    "currentFlow": ["現状1", "現状2"],
-    "bottlenecks": ["課題1", "課題2"],
-    "improvementPlan": ["改善策1", "改善策2"]
+    "currentBottlenecks": ["ボトルネック1", "ボトルネック2"],
+    "improvementFlow": [{ "before": "改善前", "after": "改善後", "tool": "使用ツール" }],
+    "costReduction": "削減効果"
   },
   "m50Data": {
-    "themes": ["テーマ1"],
-    "schedule": ["投稿頻度"],
-    "kpis": [{ "metric": "指標", "target": "値" }]
+    "snsStrategy": [{ "platform": "媒体", "frequency": "頻度", "kpis": [{ "metric": "指標", "target": "目標" }] }],
+    "contentThemes": ["テーマ1", "テーマ2"],
+    "headlines": ["見出し1", "見出し2"],
+    "funnelDesign": [{ "stage": "段階", "action": "アクション", "prompt": "AI指示" }]
   },
   "m21Data": {
-    "seminarStructure": [{ "section": "冒頭", "content": "概要", "keyTalk": "台詞" }],
-    "sessionFlow": [{ "phase": "ヒアリング", "purpose": "目的", "script": "台詞" }],
-    "closingStrategy": "クロージング方針"
+    "seminarStructure": [{ "section": "セクション", "content": "内容", "keyTalk": "キートーク" }],
+    "sessionFlow": [{ "phase": "フェーズ", "purpose": "目的", "script": "スクリプト" }],
+    "closingStrategy": "クロージング戦略"
   },
   "m51Data": {
-    "headlines": ["コピー案1"],
-    "brief": { "target": "ペルソナ", "usp": "強み", "benefit": "価値" },
+    "headlines": ["ヘッドライン案"],
+    "brief": { "target": "ターゲット", "usp": "USP", "benefit": "ベネフィット" },
     "prompts": [{ "title": "プロンプト名", "body": "内容" }]
   },
   "m52Data": {
-    "xPosts": [{ "type": "教育", "draft": "投稿内容" }],
-    "funnelDesign": "導線設計"
+    "xPosts": [{ "type": "タイプ", "draft": "ドラフト" }],
+    "funnelDesign": "ファネル設計概要"
   },
-  "aiNote": "AIからの判断の背景やアドバイス",
+  "aiNote": "AIからのアドバイス",
   "tags": ["タグ1", "タグ2"]
 }
 `;
