@@ -266,9 +266,13 @@ export default function Home() {
                 <Rocket size={16} />
                 <span>Next-Gen Consulting Intelligence</span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-slate-900 leading-tight">
-                AIビジネス戦略<br />
-                <span className="text-blue-600">シュミレーター</span>
+              <h1 className="flex flex-col items-center tracking-tight text-slate-900 leading-tight">
+                <span className="text-xl md:text-2xl font-bold text-slate-500 mb-2">
+                  AIビジネス戦略シュミレーター
+                </span>
+                <span className="text-5xl md:text-6xl font-extrabold text-blue-600 font-[var(--font-outfit)]">
+                  consulting24
+                </span>
               </h1>
               <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
                 あらゆるクライアントの多様な悩みに対して、<br />
