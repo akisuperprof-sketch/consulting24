@@ -41,10 +41,14 @@ import {
     Loader2,
     ArrowUpRight,
     HelpCircle,
-    ChevronDown
+    ChevronDown,
+    MessageCircle,
+    Share2,
+    Twitter,
+    ArrowRightCircle
 } from "lucide-react";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AnalysisResult, chatWithAI } from "@/app/actions";
 
 import { ModuleId, MODULES } from "@/lib/modules";
@@ -55,6 +59,86 @@ import { twMerge } from "tailwind-merge";
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
+
+const NextStepBox = ({ type = "内容" }: { type?: string }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-12 p-6 bg-white border border-slate-200 rounded-[2.5rem] flex items-center justify-between group shadow-sm hover:shadow-md transition-all"
+        >
+            <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <LightbulbIcon size={24} />
+                </div>
+                <div className="text-sm">
+                    <p className="text-slate-800 font-bold mb-1">
+                        この{type}に間違いや修正があれば右上の<span className="text-indigo-600 group-hover:text-indigo-400 font-black px-1 underline underline-offset-4 decoration-slate-200 transition-colors">編集モード</span>を、修正必要なければ使用して下さい。
+                    </p>
+                    <p className="text-slate-500 font-medium">
+                        左のサイドバーから起動モジュールの次の項目を選びましょう！
+                    </p>
+                </div>
+            </div>
+            <div className="hidden lg:block mr-4">
+                <ArrowUpRight className="text-slate-200 group-hover:text-indigo-600 transition-all animate-bounce" size={24} />
+            </div>
+        </motion.div>
+    );
+};
+
+const GeneratingOverlay = () => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center"
+    >
+        <div className="w-20 h-20 relative mb-8">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-100" />
+            <motion.div
+                className="absolute inset-0 rounded-full border-4 border-indigo-600 border-t-transparent"
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            />
+        </div>
+        <h3 className="text-2xl font-black text-slate-800 mb-2">戦略を構築中...</h3>
+        <p className="text-slate-500 font-medium">AIが市場データ、競合、最新トレンドを多角的に解析しています。</p>
+        <div className="mt-8 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold animate-pulse">
+            Analyzing search volume & platform specific trends...
+        </div>
+    </motion.div>
+);
+
+// Helper for simple markdown-like rendering
+const MarkdownText = ({ text }: { text: string }) => {
+    return (
+        <div className="whitespace-pre-wrap leading-relaxed space-y-3 font-medium">
+            {text.split('\n').map((line, i) => {
+                if (!line.trim()) return <div key={i} className="h-2" />;
+
+                // Handle basic list items
+                const isList = line.trim().startsWith('- ') || line.trim().startsWith('* ') || /^\d+\./.test(line.trim());
+
+                return (
+                    <div key={i} className={cn(isList ? "pl-4 relative" : "")}>
+                        {isList && <span className="absolute left-0 top-0 text-blue-400">•</span>}
+                        {line.split(/(\*\*.*?\*\*)/).map((part, j) => {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                return (
+                                    <strong key={j} className="text-white font-black px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 shadow-sm mx-0.5">
+                                        {part.slice(2, -2)}
+                                    </strong>
+                                );
+                            }
+                            return part;
+                        })}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
 
 interface DashboardProps {
     analysis: AnalysisResult;
@@ -131,9 +215,42 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
     // Sidebar & Chat State
     const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [isChatOpen, setIsChatOpen] = useState(false);
+    const [isM00Blinking, setIsM00Blinking] = useState(false);
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [showScrollHint, setShowScrollHint] = useState(false);
+
+    useEffect(() => {
+        const checkScroll = () => {
+            if (scrollContainerRef.current) {
+                const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+                // Show hint if there's more than 100px of scrollable content below
+                setShowScrollHint(scrollHeight - clientHeight - scrollTop > 80);
+            }
+        };
+
+        const container = scrollContainerRef.current;
+        if (container) {
+            container.addEventListener('scroll', checkScroll);
+            checkScroll();
+            // Check again after a short delay for content to render
+            const timer = setTimeout(checkScroll, 800);
+            return () => {
+                container.removeEventListener('scroll', checkScroll);
+                clearTimeout(timer);
+            };
+        }
+    }, [activeModule, data]);
 
     const handleGenerateDetail = () => {
+        // Validation: check if base data exists
+        if (!data.m00Data || data.m00Data.problems.length === 0) {
+            setIsM00Blinking(true);
+            setTimeout(() => setIsM00Blinking(false), 3000);
+            alert("『構造化整理モジュール（M00）』の情報が不足しています。サイドバーで対象のモジュールを選択し、コアの問題とゴールを確定させてください。");
+            return;
+        }
+
         setIsGenerating(true);
         // Simulate AI thinking time
         setTimeout(() => {
@@ -198,6 +315,49 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                     ]
                 };
                 updated = true;
+            } else if (activeModule === "M21" && !newData.m21Data) {
+                newData.m21Data = {
+                    seminarStructure: [
+                        { section: "問題の深刻化", content: "ターゲットが抱える『不の感情』を言語化し、解決の必要性を共有する", keyTalk: "「このままだと、1年後には競合にリードの半分を奪われる可能性があります。」" },
+                        { section: "解決策の提示", content: "『これなら私にもできる』と思わせるシンプルな3ステップを提示", keyTalk: "「まずは『設計』。次に『習慣化』。最後に『自動化』。これだけで未来は変わります。」" },
+                        { section: "出口設計", content: "個別相談（導入診断）への限定2択誘導", keyTalk: "「今日お伝えしたのは全体の1割です。残りの9割、あなた専用のプランを個別に組みませんか？」" }
+                    ],
+                    sessionFlow: [
+                        { phase: "冒頭・安心設計", purpose: "時間・目的・特別感の合意", script: "「今日は45分で、あなたの案件に合わせたAI活用法を決めます。全員に提案はしません。」" },
+                        { phase: "KGI/KPI設定", purpose: "なりたい姿と数字の言語化", script: "「もし毎日2時間浮いたら、本当は何に時間を使いたいですか？」" },
+                        { phase: "梯子落とし", purpose: "一人でやる限界と現実の提示", script: "「独学が難しいのは、ツール選びではなく『自社に合わせた型』がないからです。」" }
+                    ],
+                    closingStrategy: "説得しない。相手が『必要です』と言った時のみプランを提示する。"
+                };
+                updated = true;
+            } else if (activeModule === "M51" && !newData.m51Data) {
+                newData.m51Data = {
+                    headlines: [
+                        "【実録】AIを相棒にしたら、LPの成約率が1.8倍に跳ねた話",
+                        "なぜ、あなたの書く文章は『丁寧なのに売れない』のか？",
+                        "【穴埋め式】天才コピーライターの思考を再現する究極のプロンプト"
+                    ],
+                    brief: {
+                        target: "SNSでの集客に行き詰まりを感じている教育マーケター",
+                        usp: "心理学×コピーライティング×生成AIプロンプトの三位一体",
+                        benefit: "『書く苦しみ』から解放され、勝手に売れる文章が日常的に生成される"
+                    },
+                    prompts: [
+                        { title: "コピー設計ブリーフ", body: "あなたはプロのライターです。以下の商材からターゲットとベネフィットを抽出してください..." },
+                        { title: "一括コピー生成", body: "ブリーフを元に、見出し20個とリード文をA/Bテスト前提で出力してください..." }
+                    ]
+                };
+                updated = true;
+            } else if (activeModule === "M52" && !newData.m52Data) {
+                newData.m52Data = {
+                    xPosts: [
+                        { type: "教育", draft: "成果を出す人は『道具』より先に『設計図』を整える。AIも同じで、プロンプトより..." },
+                        { type: "共感", draft: "毎日PCの前で3時間悩んでいた頃の自分に伝えたい。その悩み、型さえあれば5分で..." },
+                        { type: "拡散", draft: "【完全版】誰でも『飛ぶように売れる』文章が作れるプロンプト集をnoteにまとめました。" }
+                    ],
+                    funnelDesign: "X（日々教育）→ note（深い信頼獲得）→ 個別相談（最終意思決定）"
+                };
+                updated = true;
             } else if (activeModule === "M91" && !newData.m91Data) {
                 newData.m91Data = {
                     scenarios: [
@@ -209,6 +369,20 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         { name: "顧客獲得単価 (CPA)", value: "15,000円" },
                         { name: "LTV (ライフタイムバリュー)", value: "120,000円" },
                         { name: "月間成約数", value: "30件" }
+                    ]
+                };
+                updated = true;
+            } else if (activeModule === "M12" && !newData.m12Data) {
+                newData.m12Data = {
+                    trendingKeywords: [
+                        { word: "生成AI 活用事例", volume: "24,000", growth: "+150%" },
+                        { word: "DX 伴走支援", volume: "12,500", growth: "+85%" },
+                        { word: "AIエージェント 開発", volume: "8,200", growth: "+320%" }
+                    ],
+                    relatedQueries: ["AI 導入 費用", "中小企業 生成AI 補助金", "ChatGPT 業務効率化 事例"],
+                    platformStrategy: [
+                        { platform: "X (Twitter)", approach: "最新のAIニュース解説と、現場での『具体的な失敗談』の共有で信頼を獲得。" },
+                        { platform: "Note / 記事", approach: "『1ヶ月で100時間削減した具体的な方法』といった図解入りの詳細実装ガイド。" }
                     ]
                 };
                 updated = true;
@@ -484,23 +658,27 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                     起動モジュール
                                 </div>
                             )}
-                            {data.selectedModules.map((m) => (
-                                <button
-                                    key={m.id}
-                                    onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
-                                    className={cn(
-                                        "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap",
-                                        activeModule === m.id
-                                            ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
-                                            : "text-slate-600 hover:bg-slate-50",
-                                        !isSidebarExpanded && "justify-center px-0"
-                                    )}
-                                >
-                                    <Layers size={18} className={cn("opacity-70 flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
-                                    {isSidebarExpanded && <span className="text-sm">{m.name}</span>}
-                                    {isSidebarExpanded && activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />}
-                                </button>
-                            ))}
+                            {data.selectedModules.map((m) => {
+                                const isM00 = m.id === "M00";
+                                return (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
+                                        className={cn(
+                                            "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap",
+                                            activeModule === m.id
+                                                ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
+                                                : "text-slate-600 hover:bg-slate-50",
+                                            !isSidebarExpanded && "justify-center px-0",
+                                            isM00 && isM00Blinking && "animate-pulse ring-2 ring-blue-500 ring-offset-2 bg-blue-100"
+                                        )}
+                                    >
+                                        <Layers size={18} className={cn("opacity-70 flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
+                                        {isSidebarExpanded && <span className="text-sm">{m.name}</span>}
+                                        {isSidebarExpanded && activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                                    </button>
+                                );
+                            })}
 
                             {/* Unselected Modules */}
                             {isSidebarExpanded && (
@@ -700,116 +878,103 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                 </header>
 
                 {/* Canvas */}
-                <div className={cn(
-                    "flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-[#f8fafc] transition-all",
-                    isPresentationMode && "bg-white p-6 lg:p-12"
-                )}>
-                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
+                <div
+                    ref={scrollContainerRef}
+                    className={cn(
+                        "flex-1 overflow-y-auto p-2 lg:p-4 space-y-3 bg-[#f8fafc] transition-all relative scroll-smooth",
+                        isPresentationMode && "bg-white p-6 lg:p-12"
+                    )}
+                >
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-2">
                         <div className="flex items-center space-x-4 w-full">
-                            <h2 className="text-2xl font-bold text-slate-900">
+                            <h2 className="text-xl font-black text-slate-800 tracking-tight">
                                 {activeModule === "M92" ? "履歴管理" : data.selectedModules.find(m => m.id === activeModule)?.name}
                             </h2>
                             {activeModule !== "M92" && (
-                                <span className="hidden sm:inline-block px-3 py-1 bg-green-100 text-green-700 text-[10px] rounded-full uppercase tracking-widest font-black">
+                                <span className="hidden sm:inline-block px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] rounded-full uppercase tracking-widest font-black border border-blue-100">
                                     Ready for Deep Analysis
                                 </span>
                             )}
                         </div>
                         {activeModule !== "M92" && (
-                            <div className="flex items-center space-x-2 w-full lg:w-auto mt-4 lg:mt-0">
+                            <div className="flex items-center space-x-2 w-full lg:w-auto mt-2 lg:mt-0">
+                                {/* Only "Consult AI" button should be here. "Generate" is in module body. */}
                                 <button
                                     onClick={() => {
-                                        setIsChatOpen(true);
+                                        const el = document.getElementById('ai-advisor-section');
+                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
                                     }}
-                                    className="flex-1 lg:flex-none px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-all active:scale-95"
+                                    className="flex-1 lg:flex-none px-4 py-2 text-xs bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-all active:scale-95 flex items-center shadow-sm"
                                 >
-                                    AIに詳しく聞く
+                                    <MessageSquare size={14} className="mr-2 text-indigo-500" />
+                                    AIアドバイザーに相談
                                 </button>
                             </div>
                         )}
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                         {/* Analysis Workspace (Full Width now) */}
-                        <div className="lg:col-span-4 space-y-8">
-                            <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 lg:p-10 min-h-[600px] relative overflow-hidden">
+                        <div className="lg:col-span-4 space-y-4">
+                            <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-4 lg:p-8 min-h-[500px] relative overflow-hidden">
                                 {/* Watermark for skeleton */}
-                                <div className="absolute top-10 right-10 flex items-center space-x-2 text-slate-100 select-none">
-                                    <BarChart3 size={120} className="rotate-12 opacity-50" />
+                                <div className="absolute top-10 right-10 flex items-center space-x-2 text-slate-50 select-none pointer-events-none">
+                                    <BarChart3 size={120} className="rotate-12 opacity-30" />
                                 </div>
 
                                 <div className="relative z-10">
                                     {/* M00: Structure */}
                                     {activeModule === "M00" && data.m00Data && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                                            {/* Top Actions for Landing */}
-                                            <div className="col-span-full flex justify-end space-x-4 mb-4">
-                                                <button
-                                                    onClick={() => {
-                                                        if (window.confirm("新規に分析を開始しますか？（現在の未保存データはクリアされます）")) {
-                                                            window.location.reload();
-                                                        }
-                                                    }}
-                                                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
-                                                >
-                                                    <RotateCcw size={14} className="inline mr-1" />
-                                                    新規作成 (Reset)
-                                                </button>
-                                                <button
-                                                    onClick={() => setActiveModule("M92")}
-                                                    className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-200 transition-colors flex items-center shadow-sm"
-                                                >
-                                                    <Library size={16} className="mr-2" />
-                                                    履歴から続ける (Resume)
-                                                </button>
-                                            </div>
-
-                                            <div className="space-y-6">
-                                                <div className="flex items-center space-x-3 text-rose-600 font-black text-xs uppercase tracking-widest">
-                                                    <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">!</div>
-                                                    <span>課題 (Core Problems)</span>
+                                        <div className="space-y-10">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center space-x-3 text-rose-600 font-black text-xs uppercase tracking-widest">
+                                                        <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">!</div>
+                                                        <span>課題 (Core Problems)</span>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        {data.m00Data.problems.map((p, i) => (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                                                                key={i} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl text-slate-700 font-medium leading-relaxed"
+                                                            >
+                                                                {isEditing ? (
+                                                                    <textarea
+                                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-900 resize-none h-auto"
+                                                                        rows={2}
+                                                                        value={p}
+                                                                        onChange={(e) => updateM00('problems', i, e.target.value)}
+                                                                    />
+                                                                ) : p}
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                                <div className="space-y-4">
-                                                    {data.m00Data.problems.map((p, i) => (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                                                            key={i} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl text-slate-700 font-medium leading-relaxed"
-                                                        >
-                                                            {isEditing ? (
-                                                                <textarea
-                                                                    className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-900 resize-none h-auto"
-                                                                    rows={2}
-                                                                    value={p}
-                                                                    onChange={(e) => updateM00('problems', i, e.target.value)}
-                                                                />
-                                                            ) : p}
-                                                        </motion.div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <div className="space-y-6">
-                                                <div className="flex items-center space-x-3 text-blue-600 font-black text-xs uppercase tracking-widest">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">✓</div>
-                                                    <span>目標 (Target Goals)</span>
-                                                </div>
-                                                <div className="space-y-4">
-                                                    {data.m00Data.goals.map((g, i) => (
-                                                        <motion.div
-                                                            initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                                                            key={i} className="p-6 bg-blue-50/30 border border-blue-100/50 rounded-3xl text-slate-700 font-medium leading-relaxed italic"
-                                                        >
-                                                            {isEditing ? (
-                                                                <textarea
-                                                                    className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-900 resize-none h-auto"
-                                                                    rows={2}
-                                                                    value={g}
-                                                                    onChange={(e) => updateM00('goals', i, e.target.value)}
-                                                                />
-                                                            ) : g}
-                                                        </motion.div>
-                                                    ))}
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center space-x-3 text-blue-600 font-black text-xs uppercase tracking-widest">
+                                                        <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">✓</div>
+                                                        <span>目標 (Target Goals)</span>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        {data.m00Data.goals.map((g, i) => (
+                                                            <motion.div
+                                                                initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                                                                key={i} className="p-6 bg-blue-50/30 border border-blue-100/50 rounded-3xl text-slate-700 font-medium leading-relaxed italic"
+                                                            >
+                                                                {isEditing ? (
+                                                                    <textarea
+                                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-900 resize-none h-auto"
+                                                                        rows={2}
+                                                                        value={g}
+                                                                        onChange={(e) => updateM00('goals', i, e.target.value)}
+                                                                    />
+                                                                ) : g}
+                                                            </motion.div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <NextStepBox type="構造" />
                                         </div>
                                     )}
 
@@ -893,6 +1058,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     ))}
                                                 </div>
                                             </div>
+                                            <NextStepBox type="戦略案" />
                                         </div>
                                     )}
 
@@ -981,6 +1147,74 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     </div>
                                                 </div>
                                             </div>
+                                            <NextStepBox type="分析結果" />
+                                        </div>
+                                    )}
+
+                                    {/* M12: Trend/Keywords (Data-Driven) */}
+                                    {activeModule === "M12" && !data.m12Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Globe size={64} className="text-orange-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">トレンド・キーワード分析の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                現在の検索トレンドとSNSキーワードを解析し、<br />
+                                                「刺さる」発信のためのキーワード群を特定します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
+                                    {activeModule === "M12" && data.m12Data && (
+                                        <div className="space-y-10">
+                                            <div className="flex items-center space-x-3 mb-4 text-orange-600">
+                                                <TrendingUp />
+                                                <span className="font-black text-sm uppercase tracking-widest">Trending Keywords & Analysis</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                {data.m12Data.trendingKeywords.map((k, i) => (
+                                                    <div key={i} className="p-6 bg-orange-50 rounded-3xl border border-orange-100 group hover:bg-white hover:shadow-xl transition-all">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div className="px-2 py-1 bg-white rounded text-[10px] font-black text-orange-600 border border-orange-100">VOL: {k.volume}</div>
+                                                            <div className="text-emerald-500 font-bold text-xs">{k.growth}</div>
+                                                        </div>
+                                                        <div className="text-lg font-black text-slate-800">{k.word}</div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">関連クエリ (Seed Keywords)</h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {data.m12Data.relatedQueries.map((q, i) => (
+                                                            <span key={i} className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-sm font-medium text-slate-600 shadow-sm">
+                                                                {q}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">プラットフォーム別方針</h5>
+                                                    <div className="space-y-6">
+                                                        {data.m12Data.platformStrategy.map((s, i) => (
+                                                            <div key={i} className="flex items-start">
+                                                                <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mr-4 flex-shrink-0 font-black text-xs">
+                                                                    {s.platform[0]}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="font-bold text-slate-800 text-sm mb-1">{s.platform}</div>
+                                                                    <div className="text-xs text-slate-500 leading-relaxed">{s.approach}</div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <NextStepBox type="キーワード分析" />
                                         </div>
                                     )}
 
@@ -1140,6 +1374,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     )}
                                                 </div>
                                             </div>
+                                            <NextStepBox type="計画案" />
                                         </div>
                                     )}
 
@@ -1257,6 +1492,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     ))}
                                                 </div>
                                             </div>
+                                            <NextStepBox type="テーマ案" />
                                         </div>
                                     )}
 
@@ -1348,105 +1584,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
 
-                                    {/* Floating Chat Button & Drawer */}
-                                    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end print:hidden">
-                                        {/* Chat Window */}
-                                        {isChatOpen && (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden"
-                                            >
-                                                <div className="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
-                                                    <h4 className="font-bold flex items-center text-sm">
-                                                        <LightbulbIcon className="mr-2 text-yellow-400" size={16} />
-                                                        AIアドバイザー (AI Advisor)
-                                                    </h4>
-                                                    <div className="flex items-center space-x-2">
-                                                        <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">BETA</span>
-                                                        <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white">
-                                                            <X size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
 
-                                                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-700">
-                                                    <div className="flex items-start">
-                                                        <div className="w-6 h-6 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-[10px] font-bold mr-2">AI</div>
-                                                        <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-xs text-slate-300 leading-relaxed">
-                                                            {analysis.aiNote}
-                                                        </div>
-                                                    </div>
-                                                    {chatHistory.map((msg, i) => (
-                                                        <div key={i} className={cn("flex items-start", msg.role === "user" ? "flex-row-reverse" : "")}>
-                                                            <div className={cn(
-                                                                "w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold",
-                                                                msg.role === "user" ? "bg-slate-200 text-slate-900 ml-2" : "bg-blue-600 mr-2"
-                                                            )}>
-                                                                {msg.role === "user" ? "You" : "AI"}
-                                                            </div>
-                                                            <div className={cn(
-                                                                "p-2.5 rounded-2xl text-xs max-w-[85%] leading-relaxed",
-                                                                msg.role === "user" ? "bg-white text-slate-900 rounded-tr-none" : "bg-slate-800 text-slate-300 rounded-tl-none"
-                                                            )}>
-                                                                {msg.parts}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                    {isChatLoading && (
-                                                        <div className="flex items-center space-x-2 text-slate-400 text-xs ml-9">
-                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
-                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100" />
-                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200" />
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="p-3 bg-slate-800 border-t border-slate-700">
-                                                    <div className="flex items-center bg-slate-900 rounded-xl px-3 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                                                        <input
-                                                            className="flex-1 bg-transparent text-white text-xs focus:outline-none"
-                                                            placeholder="質問を入力..."
-                                                            value={chatInput}
-                                                            onChange={(e) => setChatInput(e.target.value)}
-                                                            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSendMessage()}
-                                                        />
-                                                        <button
-                                                            onClick={handleSendMessage}
-                                                            disabled={!chatInput.trim() || isChatLoading}
-                                                            className="ml-2 text-blue-500 hover:text-blue-400 disabled:opacity-50 transition-colors"
-                                                        >
-                                                            <Send size={16} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
-
-                                        <button
-                                            onClick={() => setIsChatOpen(!isChatOpen)}
-                                            className={`shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group z-[60] ${isChatOpen
-                                                ? "w-14 h-14 bg-slate-800 text-white rounded-full"
-                                                : "px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-full space-x-3"
-                                                }`}
-                                        >
-                                            {isChatOpen ? (
-                                                <X size={24} />
-                                            ) : (
-                                                <>
-                                                    <div className="relative">
-                                                        <MessageSquare size={24} />
-                                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-slate-900 animate-pulse" />
-                                                    </div>
-                                                    <div className="flex flex-col items-start">
-                                                        <span className="text-[10px] font-medium text-slate-400 leading-none mb-1">迷ったらここ！</span>
-                                                        <span className="text-sm font-bold">AIに相談 / 次のアクション</span>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
 
                                     {activeModule === "M60" && data.m60Data && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1497,6 +1635,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             </div>
 
 
+                                            <NextStepBox type="技術構成" />
                                         </div>
                                     )}
 
@@ -1545,6 +1684,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     ))}
                                                 </div>
                                             </div>
+                                            <NextStepBox type="試算結果" />
                                         </div>
                                     )}
 
@@ -1557,7 +1697,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             <h3 className="text-2xl font-bold text-slate-800 mb-3">カスタム分析の準備完了</h3>
                                             <p className="text-slate-500 mb-8 max-w-md leading-relaxed">
                                                 標準項目ではカバーできない独自の分析を行います。<br />
-                                                右上の<span className="font-bold text-blue-600">「詳細データを生成」</span>ボタンを押して、<br />
+                                                <span className="font-bold text-blue-600">「詳細データを生成」</span>ボタンを押して、<br />
                                                 AIによる特別リサーチを開始してください。
                                             </p>
                                             <button
@@ -1598,7 +1738,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             {/* Editable List */}
                                             <div className="space-y-6">
                                                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Key Findings & Action Plan</label>
-                                                {data.m99Data.details.map((d, i) => (
+                                                {data.m99Data.details.map((d: string, i: number) => (
                                                     <div key={i} className="flex items-start group">
                                                         <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-focus-within:bg-indigo-600 group-focus-within:text-white flex items-center justify-center mr-4 flex-shrink-0 font-bold transition-colors mt-4">
                                                             {i + 1}
@@ -1615,22 +1755,208 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             <div className="mt-10 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
                                                 <div className="text-sm text-indigo-800 font-medium">
                                                     <span className="block font-bold mb-1 from-indigo-600">AI活用ヒント:</span>
-                                                    「このテーマについて、リスクと対策を3つ挙げて」とチャットで指示してください。<br />
+                                                    「このテーマについて、リスクと対策を3つ挙げて」と最下部のチャットで指示してください。<br />
                                                     得られた回答をここにコピー＆ペーストして保存できます。
                                                 </div>
                                                 <button
-                                                    onClick={() => setIsChatOpen(true)}
+                                                    onClick={() => {
+                                                        const el = document.getElementById('ai-advisor-section');
+                                                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                                                    }}
                                                     className="flex-shrink-0 flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition-all whitespace-nowrap"
                                                 >
                                                     <MessageSquare className="mr-2" size={18} />
                                                     AIに相談・壁打ちする
                                                 </button>
                                             </div>
+                                            <NextStepBox type="カスタム分析" />
+                                        </div>
+                                    )}
+
+                                    {/* M21: Individual Session & Seminar Design */}
+                                    {activeModule === "M21" && data.m21Data && (
+                                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                            <div>
+                                                <h3 className="text-xl font-black mb-6 flex items-center text-slate-800">
+                                                    <Users className="mr-3 text-indigo-600" size={24} />
+                                                    セミナー構成設計 (Seminar Structure)
+                                                </h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                    {data.m21Data.seminarStructure.map((s, i) => (
+                                                        <div key={i} className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                                                            <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rounded-bl-full flex items-center justify-center text-slate-200 font-black text-2xl group-hover:text-indigo-100 transition-colors">
+                                                                {i + 1}
+                                                            </div>
+                                                            <div className="text-[10px] font-black tracking-widest text-indigo-500 uppercase mb-2">{s.section}</div>
+                                                            <div className="font-bold text-slate-800 mb-3">{s.content}</div>
+                                                            <div className="p-4 bg-slate-50 rounded-2xl text-[13px] text-slate-600 border border-slate-100 italic leading-relaxed">
+                                                                「{s.keyTalk}」
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-xl font-black mb-6 flex items-center text-slate-800">
+                                                    <MessageCircle className="mr-3 text-emerald-600" size={24} />
+                                                    個別相談 6セクションの流れ (Session Flow)
+                                                </h3>
+                                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-6">
+                                                    {data.m21Data.sessionFlow.map((f, i) => (
+                                                        <div key={i} className="flex gap-4 group">
+                                                            <div className="flex flex-col items-center">
+                                                                <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold text-sm group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                                                                    {i + 1}
+                                                                </div>
+                                                                {i < data.m21Data!.sessionFlow.length - 2 && <div className="w-0.5 flex-1 bg-emerald-50 group-hover:bg-emerald-100 mt-1" />}
+                                                            </div>
+                                                            <div className="flex-1 pb-4">
+                                                                <div className="font-bold text-slate-800 flex items-center">
+                                                                    {f.phase}
+                                                                    <span className="ml-3 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-tighter">{f.purpose}</span>
+                                                                </div>
+                                                                <div className="mt-2 p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 text-xs text-slate-600">
+                                                                    <MarkdownText text={f.script} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] shadow-xl overflow-hidden relative">
+                                                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none rotate-12">
+                                                    <CheckCircle2 size={120} />
+                                                </div>
+                                                <h3 className="text-lg font-black mb-4 flex items-center">
+                                                    <Zap className="mr-3 text-yellow-400" size={20} />
+                                                    クロージング戦略 (Closing Strategy)
+                                                </h3>
+                                                <p className="text-slate-300 leading-relaxed font-medium italic">
+                                                    「{data.m21Data.closingStrategy}」
+                                                </p>
+                                            </div>
+                                            <NextStepBox type="設計案" />
+                                        </div>
+                                    )}
+
+                                    {/* M51: Copywriting Mastery */}
+                                    {activeModule === "M51" && data.m51Data && (
+                                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                                <div className="lg:col-span-1">
+                                                    <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm lg:sticky lg:top-8">
+                                                        <h3 className="text-sm font-black tracking-widest text-slate-400 uppercase mb-6 flex items-center">
+                                                            <FileText className="mr-2" size={16} />
+                                                            Copy Brief
+                                                        </h3>
+                                                        <div className="space-y-6">
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-indigo-500 mb-1">TARGET ペルソナ</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.target}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-indigo-500 mb-1">USP 独自の強み</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.usp}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-indigo-500 mb-1">BENEFIT 約束する価値</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.benefit}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="lg:col-span-2 space-y-8">
+                                                    <div>
+                                                        <h3 className="text-xl font-black mb-6 flex items-center text-slate-800">
+                                                            <Zap className="mr-3 text-amber-500" size={24} />
+                                                            『売れる』見出し案 (Headlines)
+                                                        </h3>
+                                                        <div className="space-y-3">
+                                                            {data.m51Data.headlines.map((h, i) => (
+                                                                <div key={i} className="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-400 hover:shadow-md transition-all group flex items-start">
+                                                                    <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 text-[10px] flex items-center justify-center mr-4 mt-1 font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
+                                                                        {i + 1}
+                                                                    </div>
+                                                                    <div className="font-bold text-slate-800 group-hover:text-indigo-900 transition-colors leading-relaxed">
+                                                                        {h}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="space-y-4">
+                                                        <h3 className="text-xl font-black mb-6 flex items-center text-slate-800">
+                                                            <Code className="mr-3 text-slate-400" size={24} />
+                                                            AIプロンプト案 (Prompts)
+                                                        </h3>
+                                                        {data.m51Data.prompts.map((p, i) => (
+                                                            <div key={i} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+                                                                <div className="px-5 py-3 bg-slate-100/50 border-b border-slate-200 flex items-center justify-between">
+                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{p.title}</span>
+                                                                    <button className="text-[10px] font-bold text-indigo-600 hover:underline">Copy Prompt</button>
+                                                                </div>
+                                                                <div className="p-5 font-mono text-[10px] text-slate-400 leading-relaxed max-h-32 overflow-y-auto">
+                                                                    {p.body}
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <NextStepBox type="コピー案" />
+                                        </div>
+                                    )}
+
+                                    {/* M52: SNS & Educational Funnel */}
+                                    {activeModule === "M52" && data.m52Data && (
+                                        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                            <div>
+                                                <h3 className="text-xl font-black mb-6 flex items-center text-slate-800">
+                                                    <Share2 className="mr-3 text-blue-500" size={24} />
+                                                    X (Twitter) 戦略投稿 (SNS Posts)
+                                                </h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    {data.m52Data.xPosts.map((p, i) => (
+                                                        <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
+                                                            <Twitter className="absolute top-6 right-6 text-blue-50 opacity-0 group-hover:opacity-100 transition-opacity" size={32} />
+                                                            <div className="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest mb-4">
+                                                                {p.type} POST
+                                                            </div>
+                                                            <div className="text-sm text-slate-700 font-medium leading-relaxed">
+                                                                <MarkdownText text={p.draft} />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-12 opacity-5 blur-xl pointer-events-none">
+                                                    <TrendingUp size={180} />
+                                                </div>
+                                                <h3 className="text-xl font-black mb-8 flex items-center">
+                                                    <ArrowRightCircle className="mr-3 text-indigo-400" size={24} />
+                                                    集客ファンネル設計 (Funnel Design)
+                                                </h3>
+                                                <div className="max-w-xl mx-auto space-y-4">
+                                                    <div className="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-center font-bold text-lg">
+                                                        {data.m52Data.funnelDesign}
+                                                    </div>
+                                                    <div className="text-center text-[10px] text-indigo-300 font-black uppercase tracking-[0.3em]">
+                                                        educational marketing path
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <NextStepBox type="ファンネル設計" />
                                         </div>
                                     )}
 
                                     {/* Generic Fallback for others */}
-                                    {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92", "M99"].includes(activeModule) && (
+                                    {!["M00", "M10", "M11", "M12", "M20", "M21", "M30", "M31", "M40", "M50", "M51", "M52", "M60", "M61", "M92", "M99"].includes(activeModule) && (
                                         <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
                                             <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
                                                 {activeModule === "M40" && <Cpu size={32} />}
@@ -1641,7 +1967,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             <div className="text-center">
                                                 <h3 className="font-black text-xl mb-2">モジュール：{data.selectedModules.find(m => m.id === activeModule)?.name}</h3>
                                                 <p className="text-slate-500 max-w-sm mx-auto text-sm">
-                                                    AIが現在詳細な構成案を作成中です。プレビューを表示するには、上の「詳細データを生成」をクリックしてください。
+                                                    AIが現在詳細な構成案を作成中です。プレビューを表示するには、「詳細データを生成」をクリックしてください。
                                                 </p>
                                             </div>
                                             <div className="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -1652,31 +1978,131 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             </div>
                                         </div>
                                     )}
+                                </div>
+                            </div>
 
+                            {/* AI Advisor Section (Integrated / Horizontal) - Moved Outside for Visibility */}
+                            <div id="ai-advisor-section" className="mt-8 bg-slate-900 text-white rounded-[2.5rem] border border-slate-800 overflow-hidden shadow-2xl relative">
+                                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                                    <Zap size={140} />
+                                </div>
 
-
-
-
-                                    {/* Quick Actions */}
-                                    <div
-                                        onClick={handleAddCustomModule}
-                                        className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer active:scale-95"
-                                    >
-                                        <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                            <Plus />
+                                <div className="p-8 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 backdrop-blur-md">
+                                    <div className="flex items-center space-x-5">
+                                        <div className="w-14 h-14 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                            <LightbulbIcon className="text-white" size={28} />
                                         </div>
-                                        <div className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">
-                                            カスタムモジュールを追加（標準以外の分析が必要な場合）
-                                        </div>
-                                        <div className="text-[10px] text-slate-300 group-hover:text-blue-400">
-                                            例：「特定の法規制調査」「社内稟議向けの対策」「ニッチ市場の深掘り」など
+                                        <div>
+                                            <h3 className="text-2xl font-black tracking-tight flex items-center">
+                                                AIアドバイザー (Strategic Consulting)
+                                                <span className="ml-3 text-[10px] bg-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-1 rounded-full font-black uppercase tracking-widest">Active</span>
+                                            </h3>
+                                            <p className="text-sm text-slate-400 mt-1">分析結果に基づき、戦略のブラッシュアップや具体施策についてAIと相談しましょう。</p>
                                         </div>
                                     </div>
+                                    <div className="hidden lg:flex items-center space-x-3 text-xs font-bold text-slate-500">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="tracking-widest uppercase text-emerald-400">Analysis Context Connected</span>
+                                    </div>
+                                </div>
+
+                                <div className="p-8 md:p-12 space-y-10 bg-slate-950/40">
+                                    {/* AI Initial Note / Latest Advice */}
+                                    <div className="flex items-start">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 flex-shrink-0 flex items-center justify-center text-xs font-black mr-6 text-blue-400 mt-1 shadow-inner">AI</div>
+                                        <div className="flex-1 bg-slate-800/60 backdrop-blur-sm p-8 rounded-[2.5rem] rounded-tl-none border border-slate-700 text-base text-slate-200 shadow-xl">
+                                            <MarkdownText text={analysis.aiNote || "これまでの分析に基づき、最適な戦略を提案できます。気になる点があればお聞きください。"} />
+                                        </div>
+                                    </div>
+
+                                    {chatHistory.map((msg, i) => (
+                                        <div key={i} className={cn("flex items-start animate-in fade-in slide-in-from-bottom-4 duration-500", msg.role === "user" ? "flex-row-reverse" : "max-w-5xl")}>
+                                            <div className={cn(
+                                                "w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center text-xs font-black shadow-xl mt-1",
+                                                msg.role === "user" ? "bg-white text-slate-900 ml-6 border border-slate-200" : "bg-blue-600 text-white mr-6 border border-blue-400"
+                                            )}>
+                                                {msg.role === "user" ? "YOU" : "AI"}
+                                            </div>
+                                            <div className={cn(
+                                                "p-8 rounded-[2.5rem] text-base leading-relaxed border relative shadow-xl overflow-hidden",
+                                                msg.role === "user"
+                                                    ? "bg-white text-slate-800 rounded-tr-none border-slate-100"
+                                                    : "bg-slate-800 text-slate-200 rounded-tl-none border-slate-700 backdrop-blur-sm"
+                                            )}>
+                                                <MarkdownText text={msg.parts} />
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {isChatLoading && (
+                                        <div className="flex items-center space-x-4 text-slate-500 text-sm ml-18 bg-slate-900/50 p-4 rounded-full w-fit">
+                                            <Loader2 size={20} className="animate-spin text-blue-500" />
+                                            <span className="font-bold animate-pulse">AI思考中... 戦略を練っています</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-8 lg:p-12 bg-slate-900 border-t border-slate-800">
+                                    <div className="max-w-4xl mx-auto">
+                                        <div className="relative group">
+                                            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[2rem] blur opacity-25 group-focus-within:opacity-100 transition duration-1000 group-focus-within:duration-200"></div>
+                                            <div className="relative flex items-center bg-slate-950 rounded-[2rem] px-8 py-5 border border-slate-700 transition-all">
+                                                <input
+                                                    className="flex-1 bg-transparent text-white text-xl focus:outline-none placeholder:text-slate-600 font-medium"
+                                                    placeholder="「集客を加速させるには？」「収益化のロードマップは？」など..."
+                                                    value={chatInput}
+                                                    onChange={(e) => setChatInput(e.target.value)}
+                                                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSendMessage()}
+                                                />
+                                                <button
+                                                    onClick={handleSendMessage}
+                                                    disabled={!chatInput.trim() || isChatLoading}
+                                                    className="ml-6 w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center hover:bg-blue-500 disabled:opacity-50 transition-all shadow-lg shadow-blue-500/20 active:scale-95 group-hover:rotate-12"
+                                                >
+                                                    <Send size={24} />
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-8 flex flex-wrap gap-3 justify-center">
+                                            {[
+                                                { t: "リスクと対策は？", i: <AlertCircle size={14} /> },
+                                                { t: "集客の具体案は？", i: <Users size={14} /> },
+                                                { t: "売上のシミュレーション", i: <TrendingUp size={14} /> },
+                                                { t: "競合に勝つ差別化は？", i: <Zap size={14} /> }
+                                            ].map((hint) => (
+                                                <button
+                                                    key={hint.t}
+                                                    onClick={() => { setChatInput(hint.t) }}
+                                                    className="flex items-center space-x-2 text-xs font-black text-slate-400 bg-slate-800/40 hover:bg-blue-600 hover:text-white hover:border-blue-400 px-5 py-2.5 rounded-full border border-slate-700 transition-all active:scale-95 shadow-sm"
+                                                >
+                                                    {hint.i}
+                                                    <span>{hint.t}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div
+                                onClick={handleAddCustomModule}
+                                className="mt-8 p-12 border-2 border-dashed border-slate-200 rounded-[3rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 hover:bg-white transition-all cursor-pointer active:scale-95 shadow-sm"
+                            >
+                                <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-3xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors shadow-inner">
+                                    <Plus size={32} />
+                                </div>
+                                <div className="text-sm font-black text-slate-500 group-hover:text-blue-600 transition-colors">
+                                    カスタムモジュールを追加（標準以外の分析が必要な場合）
+                                </div>
+                                <div className="text-xs text-slate-300 group-hover:text-blue-400 font-medium">
+                                    例：「特定の法規制調査」「社内稟議向けの対策」「ニッチ市場の深掘り」など
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
                 {/* Help Modal */}
                 {showHelp && (
                     <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
@@ -1709,7 +2135,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
                                             <div>
                                                 <h3 className="font-bold text-slate-800">詳細を生成</h3>
-                                                <p className="text-sm text-slate-500">概要を見てさらに深掘りしたい場合、右上の「詳細データを生成」をクリック。</p>
+                                                <p className="text-sm text-slate-500">概要を見てさらに深掘りしたい場合、「詳細データを生成」をクリック。</p>
                                             </div>
                                         </div>
                                         <div className="flex gap-4">
@@ -1741,7 +2167,26 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         </motion.div>
                     </div>
                 )}
+
+                {/* Scroll Hint Popup */}
+                {showScrollHint && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 20 }}
+                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40 pointer-events-none"
+                    >
+                        <div className="bg-white/80 backdrop-blur-md text-slate-800 px-5 py-2.5 rounded-full shadow-xl flex items-center space-x-2 border border-blue-200/50 animate-bounce">
+                            <ChevronDown size={18} className="text-blue-600" />
+                            <span className="text-xs font-black tracking-tighter">スクロールして続きを表示</span>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Generating Feedback Overlay */}
+                {isGenerating && <GeneratingOverlay />}
             </main>
         </div>
     );
 }
+

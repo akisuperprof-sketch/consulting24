@@ -63,6 +63,29 @@ export interface AnalysisResult {
         scenarios: { name: string; result: string; probability: string }[];
         parameters: { name: string; value: string }[];
     };
+    // Detailed data for M21 Seminar/Sales Design
+    m21Data?: {
+        seminarStructure: { section: string; content: string; keyTalk: string }[];
+        sessionFlow: { phase: string; purpose: string; script: string }[];
+        closingStrategy: string;
+    };
+    // Detailed data for M51 Copywriting
+    m51Data?: {
+        headlines: string[];
+        brief: { target: string; usp: string; benefit: string };
+        prompts: { title: string; body: string }[];
+    };
+    // Detailed data for M52 SNS Traffic
+    m52Data?: {
+        xPosts: { type: string; draft: string }[];
+        funnelDesign: string;
+    };
+    // Detailed data for M12 Trends/Keywords
+    m12Data?: {
+        trendingKeywords: { word: string; volume: string; growth: string }[];
+        relatedQueries: string[];
+        platformStrategy: { platform: string; approach: string }[];
+    };
     // Detailed data for M99 Custom
     m99Data?: {
         overview: string;
@@ -149,9 +172,23 @@ ${Object.values(MODULES).map(m => `- ${m.id}: ${m.name} (${m.description})`).joi
     "improvementPlan": ["改善策1", "改善策2"]
   },
   "m50Data": {
-    "themes": ["テーマ1", "テーマ2"],
-    "schedule": ["投稿頻度など"],
-    "kpis": [{ "metric": "指標名", "target": "目標値" }]
+    "themes": ["テーマ1"],
+    "schedule": ["投稿頻度"],
+    "kpis": [{ "metric": "指標", "target": "値" }]
+  },
+  "m21Data": {
+    "seminarStructure": [{ "section": "冒頭", "content": "概要", "keyTalk": "台詞" }],
+    "sessionFlow": [{ "phase": "ヒアリング", "purpose": "目的", "script": "台詞" }],
+    "closingStrategy": "クロージング方針"
+  },
+  "m51Data": {
+    "headlines": ["コピー案1"],
+    "brief": { "target": "ペルソナ", "usp": "強み", "benefit": "価値" },
+    "prompts": [{ "title": "プロンプト名", "body": "内容" }]
+  },
+  "m52Data": {
+    "xPosts": [{ "type": "教育", "draft": "投稿内容" }],
+    "funnelDesign": "導線設計"
   },
   "aiNote": "AIからの判断の背景やアドバイス",
   "tags": ["タグ1", "タグ2"]
@@ -197,6 +234,18 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
 
     if (freeText.includes("コンテンツ") || freeText.includes("記事") || freeText.includes("SNS") || goals.includes("sns") || freeText.includes("LINE")) {
         selected.push({ id: "M50", name: MODULES.M50.name, reason: "発信内容の具体化と運用設計の支援" });
+    }
+
+    if (freeText.includes("コピー") || freeText.includes("文章") || freeText.includes("プロンプト") || freeText.includes("LP")) {
+        selected.push({ id: "M51", name: MODULES.M51.name, reason: "心理学に基づいた『売れる文章』の自動生成と型作り" });
+    }
+
+    if (freeText.includes("拡散") || freeText.includes("X") || freeText.includes("Twitter") || freeText.includes("マーケティング")) {
+        selected.push({ id: "M52", name: MODULES.M52.name, reason: "教育マーケティングによるSNSからの成約率向上設計" });
+    }
+
+    if (freeText.includes("セミナー") || freeText.includes("相談") || freeText.includes("セールス") || freeText.includes("個別")) {
+        selected.push({ id: "M21", name: MODULES.M21.name, reason: "売り込まずに決まるセミナー・商談の導線設計" });
     }
 
     if (freeText.includes("アプリ") || freeText.includes("システム") || goals.includes("app") || goals.includes("spec") || freeText.includes("仕様")) {
@@ -273,6 +322,45 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
         improvementPlan: ["自動送信ツールの活用", "決済リンクの自動発行", "タスク管理一元化"]
     };
 
+    const m21Data = {
+        seminarStructure: [
+            { section: "問題の深刻化", content: "『今のままは、さすがにマズい』という共通認識を作る", keyTalk: "「AI時代、このままの速度で作業し続けると、3年後に市場価値はどうなりますか？」" },
+            { section: "解決策の提示", content: "『これなら自分にもできそう』という確信を作る", keyTalk: "「やることは1つだけ。型を作って、毎日回す。それだけです。」" },
+            { section: "出口設計", content: "個別相談への2択誘導（導入診断）", keyTalk: "「あなた専用の最初の一歩を、相談会で一緒に決めましょう。」" }
+        ],
+        sessionFlow: [
+            { phase: "冒頭・安心設計", purpose: "時間と目的の合意", script: "「今日は45分で、あなたに効く導入順を決めます。全員には提案しません。」" },
+            { phase: "KGI/KPI設定", purpose: "意味の言語化", script: "「その時間が浮いたら、本当は何に使いたいですか？」" },
+            { phase: "梯子落とし", purpose: "一人では難しい現実の提示", script: "「独学が難しいのは意志ではなく、環境と型がない構造上の問題です。」" }
+        ],
+        closingStrategy: "説得ではなく、確認（『必要だと感じていますか？』の一点突破）"
+    };
+
+    const m51Data = {
+        headlines: [
+            "【数字入り】AI導入で作業時間を月40時間削減した3つのステップ",
+            "【好奇心】なぜ、あなたの生成AIは『薄い文章』しか出さないのか？",
+            "【救済】売れる文章を書こうと思うほど、手が止まるあなたへ"
+        ],
+        brief: {
+            target: isPersonal ? "副業で月10万を目指す会社員" : "DX推進に悩む中小企業のリーダー",
+            usp: "コピーライティング歴10年の知見×AIプロンプトの融合",
+            benefit: "『それっぽい』ではなく『売れる意図』が通った文章が3分で完成する"
+        },
+        prompts: [
+            { title: "コピー設計ブリーフ生成", body: "あなたは戦略家です。商材の詳細からペルソナとUSPを抽出してください..." },
+            { title: "一括コピー生成マスター", body: "ブリーフを元に、見出し20個、リード文、CTAをA/Bテスト前提で出力せよ..." }
+        ]
+    };
+
+    const m52Data = {
+        xPosts: [
+            { type: "教育", draft: "AIを使える人と、AIに飲み込まれる人の差。それは『指示力』ではなく『設計力』にある..." },
+            { type: "共感", draft: "昔の僕は、1記事書くのに3日かかってました。でも、型を作ってからは30分で終わります。" },
+            { type: "拡散", draft: "【保存版】誰でも売れる文章が書ける『コピー設計図』を公開します（リプ欄にnoteリンク）" }
+        ],
+        funnelDesign: "X（日々教育・悩み解決）→ note（深い納得・実績提示）→ 公式LINE（限定オファー・個別相談）"
+    };
     const m60Data = {
         concept: isStartup ? "業界初のAIマッチングアプリ" : "既存会員向け会員証アプリ",
         features: ["ログイン/認証", "プッシュ通知", "マイページ", isStartup ? "AIマッチング" : "ポイント管理", "決済機能"],
@@ -317,6 +405,9 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
                 { metric: "CV数", target: "10件/月" }
             ]
         },
+        m21Data,
+        m51Data,
+        m52Data,
         m60Data,
         theme: freeText || "事業構想",
         aiNote: isStartup
