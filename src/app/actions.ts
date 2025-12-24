@@ -68,6 +68,7 @@ export interface AnalysisResult {
         overview: string;
         details: string[];
     };
+    theme?: string;
     aiNote: string;
     tags: string[];
 }
@@ -314,6 +315,7 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
             ]
         },
         m60Data,
+        theme: freeText || "事業構想",
         aiNote: isStartup
             ? "スタートアップにおいてはスピードが命です。M30で資金計画を固めつつ、M50で認知を広げる同時並行アプローチを推奨します。"
             : "既存の強みを活かしつつ、M40での業務効率化で利益体質を作り、生まれた余力をM20の新規開拓に回すのが定石です。",

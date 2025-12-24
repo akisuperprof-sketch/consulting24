@@ -40,7 +40,8 @@ import {
     Activity,
     Loader2,
     ArrowUpRight,
-    HelpCircle
+    HelpCircle,
+    ChevronDown
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
@@ -694,12 +695,6 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                 >
                                     AIに詳しく聞く
                                 </button>
-                                <button
-                                    onClick={handleGenerateDetail}
-                                    className="flex-1 lg:flex-none px-4 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 whitespace-nowrap active:scale-95"
-                                >
-                                    詳細データを生成
-                                </button>
                             </div>
                         )}
                     </div>
@@ -789,6 +784,23 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M20: Sales Strategy */}
+                                    {activeModule === "M20" && !data.m20Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Users size={64} className="text-indigo-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">販売戦略・ターゲットの定義</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」に` : ""}最適なターゲットペルソナと<br />
+                                                具体的なアクションプランを策定します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M20" && data.m20Data && (
                                         <div className="space-y-6">
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -820,21 +832,33 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 </div>
                                             </div>
                                             <div className="space-y-6">
-                                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4">アクションロードマップ</h4>
-                                                <div className="grid grid-cols-1 gap-4">
+                                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                    <TrendingUp className="mr-2" size={14} />
+                                                    Action Roadmap (実行プラン)
+                                                </h4>
+                                                <div className="relative pl-8 border-l-2 border-indigo-100 ml-4 space-y-8 py-2">
                                                     {data.m20Data.actionPlans.map((plan, i) => (
-                                                        <div key={i} className="flex items-center p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
-                                                            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-sm font-black text-slate-300 mr-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                                                {String(i + 1).padStart(2, "0")}
+                                                        <div key={i} className="relative">
+                                                            <div className="absolute -left-[41px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-500 border-4 border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-white z-10">
+                                                                {i + 1}
                                                             </div>
-                                                            <div className="flex-1 font-bold text-slate-700">{plan.task}</div>
-                                                            <span className={cn(
-                                                                "px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-tighter",
-                                                                plan.priority === "High" ? "bg-rose-100 text-rose-600" :
-                                                                    plan.priority === "Mid" ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-500"
-                                                            )}>
-                                                                {plan.priority} Priority
-                                                            </span>
+                                                            <div className="flex items-center p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all group ml-2">
+                                                                <div className="flex-1 font-bold text-slate-700">{plan.task}</div>
+                                                                <span className={cn(
+                                                                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter whitespace-nowrap ml-4",
+                                                                    plan.priority === "High" ? "bg-rose-100 text-rose-600" :
+                                                                        plan.priority === "Mid" ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-500"
+                                                                )}>
+                                                                    {plan.priority} Priority
+                                                                </span>
+                                                            </div>
+                                                            {i < data.m20Data!.actionPlans.length - 1 && (
+                                                                <div className="absolute left-[20px] top-full h-8 w-0.5 bg-indigo-100/0">
+                                                                    <div className="text-indigo-200 flex justify-center mt-1">
+                                                                        <ChevronDown size={16} strokeWidth={3} />
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
@@ -843,11 +867,28 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M10/M11: Market Analysis (Data-Driven) */}
+                                    {(activeModule === "M10" || activeModule === "M11") && !data.m10Data && (
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Globe size={48} className="text-blue-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">市場・競合データの生成</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
+                                                「{data.freeText || "事業構想"}」に関する<br />
+                                                市場規模、成長率、競合シェア等の詳細をAIが算出します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={16} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {(activeModule === "M10" || activeModule === "M11") && data.m10Data && (
                                         <div className="space-y-6">
                                             <div className="flex items-center space-x-3 mb-4">
                                                 <Globe className="text-blue-500" />
-                                                <span className="font-black text-sm uppercase tracking-widest">市場環境・競合分析 (Market Analysis)</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">{data.freeText || "事業"}の市場環境・競合分析 (Market Analysis)</span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                 <div className="h-32 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col justify-end p-6 relative">
