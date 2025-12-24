@@ -1568,7 +1568,26 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                     )}
 
                                     {/* M10: Market Environment & Intelligence */}
-                                    {activeModule === "M10" && data.m10Data && (
+                                    {(activeModule === "M10" || activeModule === "M11") && !data.m10Data && (
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Globe size={56} className="text-blue-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">市場分析・競合リサーチの生成</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」に関する` : ""}最新の市場トレンド、<br />
+                                                競合他社の動向、PEST分析等を<br />
+                                                リアルタイムでリサーチします。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {(activeModule === "M10" || activeModule === "M11") && data.m10Data && (
                                         <div className="space-y-8">
                                             {/* Macro Analysis (PEST/3C) */}
                                             <div className="space-y-4">
