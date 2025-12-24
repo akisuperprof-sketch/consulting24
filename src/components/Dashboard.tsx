@@ -670,8 +670,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
                 {/* Canvas */}
                 <div className={cn(
-                    "flex-1 overflow-y-auto p-4 lg:p-8 space-y-8 bg-[#f8fafc] transition-all",
-                    isPresentationMode && "bg-white p-12 lg:p-20"
+                    "flex-1 overflow-y-auto p-4 lg:p-6 space-y-4 bg-[#f8fafc] transition-all",
+                    isPresentationMode && "bg-white p-6 lg:p-12"
                 )}>
                     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between">
                         <div className="flex items-center space-x-4 w-full">
@@ -790,9 +790,9 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
                                     {/* M20: Sales Strategy */}
                                     {activeModule === "M20" && data.m20Data && (
-                                        <div className="space-y-10">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="p-10 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-100 rounded-[3rem] group">
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-100 rounded-3xl group">
                                                     <Users size={32} className="text-indigo-600 mb-6 group-hover:scale-110 transition-transform" />
                                                     <h4 className="font-black text-xs text-indigo-700 uppercase tracking-widest mb-4">Target Persona</h4>
                                                     {isEditing ? (
@@ -805,7 +805,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                         <p className="text-xl font-bold text-slate-800 leading-tight">{data.m20Data.targetPersona}</p>
                                                     )}
                                                 </div>
-                                                <div className="p-10 bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-100 rounded-[3rem] group">
+                                                <div className="p-6 bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-100 rounded-3xl group">
                                                     <ShieldCheck size={32} className="text-emerald-600 mb-6 group-hover:scale-110 transition-transform" />
                                                     <h4 className="font-black text-xs text-emerald-700 uppercase tracking-widest mb-4">Core Value</h4>
                                                     {isEditing ? (
@@ -823,7 +823,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4">アクションロードマップ</h4>
                                                 <div className="grid grid-cols-1 gap-4">
                                                     {data.m20Data.actionPlans.map((plan, i) => (
-                                                        <div key={i} className="flex items-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-md transition-all group">
+                                                        <div key={i} className="flex items-center p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all group">
                                                             <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-sm font-black text-slate-300 mr-6 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                                                                 {String(i + 1).padStart(2, "0")}
                                                             </div>
@@ -844,8 +844,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
                                     {/* M10/M11: Market Analysis (Data-Driven) */}
                                     {(activeModule === "M10" || activeModule === "M11") && data.m10Data && (
-                                        <div className="space-y-10">
-                                            <div className="flex items-center space-x-3 mb-8">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-4">
                                                 <Globe className="text-blue-500" />
                                                 <span className="font-black text-sm uppercase tracking-widest">市場環境・競合分析 (Market Analysis)</span>
                                             </div>
@@ -871,8 +871,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                     <div className="font-bold text-sm text-blue-600 line-clamp-2">{data.m10Data.trends[0]}</div>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-50/50">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50">
                                                     <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">主要競合分析 (Editable)</h5>
                                                     <div className="space-y-4">
                                                         {data.m10Data.competitors.map((c, i) => (
