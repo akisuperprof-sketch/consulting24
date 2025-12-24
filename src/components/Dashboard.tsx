@@ -1358,6 +1358,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                     </div>
                 </div>
         </div>
+                </div >
+                </div >
             </main >
         </div >
     );
