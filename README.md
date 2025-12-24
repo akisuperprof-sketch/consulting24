@@ -1,36 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AIビジネス戦略コンサルタント (Consulting24)
 
-## Getting Started
+コンサルタントの思考プロセスをUXとAIで再現し、事業課題の整理から戦略立案、実行計画、資料作成までをワンストップで支援する次世代のAIコンサルティング・アプリケーションです。
 
-First, run the development server:
+## 概要
+「整理されれば、半分は解決している」
+このアプリは、ユーザーの漠然とした悩みを受け取り、適切なフレームワークで構造化し、解決に必要なモジュールだけを自動的に提案・実行します。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 主要機能
+*   **課題の構造化 (M00)**: 曖昧な悩みを「課題」「ゴール」「制約」「前提」に分解・定義。
+*   **市場・競合インテリジェンス (M10)**: 最新の市場トレンド、競合3C分析、PEST分析を自動リサーチ。
+*   **販売戦略・成約導線 (M20)**: ターゲットペルソナの詳細定義と、具体的なアクションプランの生成。
+*   **事業計画シミュレーション (M30)**: スライダー操作で連動するリアルタイムPLシミュレーションと、資金調達計画。
+*   **コンテンツ生成 (M50)**: 戦略に基づいたSNS投稿案、記事構成、キャッチコピーの自動生成。
+*   **全体レポート出力 (M90)**: 生成された全ての戦略・計画データを統合し、そのまま提案書として使えるレポートを出力。
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 技術スタック
+*   **Framework**: Next.js 14 (App Router)
+*   **Language**: TypeScript
+*   **Styling**: Tailwind CSS, Framer Motion
+*   **AI Model**: Google Gemini 2.0 Flash (Experimental)
+*   **Platform**: Vercel
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 更新履歴 (Changelog)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### v1.1.0 - 2025/12/24
+*   **全体レポート出力機能**: 生成済み全モジュールデータを統合したMarkdownレポートのエクスポート機能を実装。
+*   **分析深度の向上**: 
+    *   M20 (販売戦略) に「Key Success Factor (勝ち筋)」項目を追加。
+    *   M30 (事業計画) に「Simulation Logic (数値根拠)」項目を追加。
+    *   AIプロンプトの最適化により、より具体的で実利的な提案が可能に。
 
-## Learn More
+### v1.0.0 - 2025/12/23
+*   初回リリース。
+*   基本5モジュールの実装。
+*   Vercelへのデプロイ完了。
+*   データ構造のサニタイズ処理による安定性向上。
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## ドキュメント
+詳細な仕様設計については [仕様書.md](./仕様書.md) を参照してください。
