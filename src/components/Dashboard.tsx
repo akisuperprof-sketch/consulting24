@@ -872,7 +872,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                             <Globe size={48} className="text-blue-200 mb-4" />
                                             <h3 className="text-lg font-bold text-slate-800 mb-2">市場・競合データの生成</h3>
                                             <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
-                                                「{data.freeText || "事業構想"}」に関する<br />
+                                                「{data.theme || "事業構想"}」に関する<br />
                                                 市場規模、成長率、競合シェア等の詳細をAIが算出します。
                                             </p>
                                             <button
@@ -888,7 +888,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="space-y-6">
                                             <div className="flex items-center space-x-3 mb-4">
                                                 <Globe className="text-blue-500" />
-                                                <span className="font-black text-sm uppercase tracking-widest">{data.freeText || "事業"}の市場環境・競合分析 (Market Analysis)</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">{data.theme || "事業"}の市場環境・競合分析 (Market Analysis)</span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                 <div className="h-32 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col justify-end p-6 relative">
@@ -955,6 +955,24 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M30/M31: Business & Finance (Data-Driven) */}
+                                    {(activeModule === "M30" || activeModule === "M31") && !data.m30Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <TrendingUp size={64} className="text-emerald-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">事業計画・収益試算の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」の` : ""}実現に向けた<br />
+                                                5年間の収益予測とキャッシュフロー、<br />
+                                                マイルストーンを設計します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {(activeModule === "M30" || activeModule === "M31") && data.m30Data && (
                                         <div className="space-y-10">
                                             <div className="flex items-center space-x-3 mb-8 text-emerald-600">
@@ -1096,6 +1114,24 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M40: Operation (Data-Driven) */}
+                                    {activeModule === "M40" && !data.m40Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Cpu size={64} className="text-amber-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">業務プロセス・体制の最適化</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」の` : ""}運営に必要な<br />
+                                                業務フローの構築とボトルネックの解消、<br />
+                                                効率的な体制図を提案します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M40" && data.m40Data && (
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-amber-600">
@@ -1136,13 +1172,33 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M50: SNS/Content (Data-Driven) */}
+                                    {activeModule === "M50" && !data.m50Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Smartphone size={64} className="text-pink-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">SNS・コンテンツ戦略の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」の` : ""}認知拡大とファン獲得に向けた<br />
+                                                具体的な発信テーマや目標KPIを推定します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M50" && data.m50Data && (
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-pink-600">
                                                 <Smartphone />
                                                 <span className="font-black text-sm uppercase tracking-widest">コンテンツ・SNS戦略 (Marketing)</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-6">
+                                            <div className="grid grid-cols-3 gap-6 relative">
+                                                <div className="absolute -top-6 right-0 text-[10px] text-slate-400 font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg">
+                                                    <LightbulbIcon size={10} className="mr-1" /> AI推定値 (初期目標)
+                                                </div>
                                                 {data.m50Data.kpis.map((k, i) => (
                                                     <div key={i} className="p-6 bg-pink-50 rounded-3xl border border-pink-100 text-center">
                                                         {isEditing ? (
@@ -1219,6 +1275,24 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     )}
 
                                     {/* M60/M61: App Development (Integrated) */}
+                                    {(activeModule === "M60" || activeModule === "M61") && !data.m60Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Code size={64} className="text-indigo-200 mb-6" />
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">システム開発要件の定義</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                {data.theme ? `「${data.theme}」の` : ""}実現に必要な<br />
+                                                アプリ・システムの機能要件、技術選定、<br />
+                                                開発ロードマップを策定します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細データを生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {(activeModule === "M60" || activeModule === "M61") && data.m60Data && (
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-indigo-600">
