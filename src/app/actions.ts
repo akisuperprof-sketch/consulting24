@@ -326,7 +326,7 @@ export async function chatWithAI(
         history: [
             {
                 role: "user",
-                parts: [{ text: `あなたは戦略コンサルタントです。以下のプロジェクト分析結果を前提に、ユーザーの質問に答えてください。\n\n${JSON.stringify(currentAnalysis)}` }],
+                parts: [{ text: `あなたは戦略コンサルタントです。以下のプロジェクト分析結果を前提に、ユーザーの質問に答えてください。回答は必ず日本語で行ってください。\n\n${JSON.stringify(currentAnalysis)}` }],
             },
             {
                 role: "model",

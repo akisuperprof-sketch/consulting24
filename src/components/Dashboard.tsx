@@ -36,7 +36,10 @@ import {
     Edit3,
     Code,
     Menu,
-    Maximize
+    Maximize,
+    Activity,
+    Loader2,
+    ArrowUpRight
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AnalysisResult, chatWithAI } from "@/app/actions";
@@ -110,6 +113,104 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
     const [chatInput, setChatInput] = useState("");
     const [chatHistory, setChatHistory] = useState<{ role: "user" | "model"; parts: string }[]>([]);
     const [isChatLoading, setIsChatLoading] = useState(false);
+
+    // Sidebar & Chat State
+    const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
+
+    const handleGenerateDetail = () => {
+        setIsGenerating(true);
+        // Simulate AI thinking time
+        setTimeout(() => {
+            const newData = { ...data };
+            let updated = false;
+
+            if ((activeModule === "M10" || activeModule === "M11") && !newData.m10Data) {
+                newData.m10Data = {
+                    growthRate: "125%",
+                    marketSize: "1.2兆円",
+                    trends: ["AIによる個別最適化", "EdTechの普及", "リカレント教育の需要増"],
+                    competitors: [
+                        { name: "A社 (大手)", share: 45, strength: "ブランド力" },
+                        { name: "B社 (新興)", share: 15, strength: "AI技術" },
+                        { name: "C社", share: 8, strength: "価格" },
+                    ]
+                };
+                updated = true;
+            } else if (activeModule === "M20" && !newData.m20Data) {
+                newData.m20Data = {
+                    targetPersona: "30-40代のキャリアアップ志向層",
+                    coreValue: "短期間で実務レベルのAIスキル習得",
+                    channels: ["LinkedIn", "Tech系メディア", "ウェビナー"],
+                    actionPlans: [
+                        { task: "オンライン広告の出稿開始", priority: "High" },
+                        { task: "無料ウェビナーの開催", priority: "High" },
+                        { task: "パートナーシップの締結", priority: "Mid" }
+                    ]
+                };
+                updated = true;
+            } else if (activeModule === "M30" && !newData.m30Data) {
+                newData.m30Data = {
+                    fundingNeeds: "初期開発費として2000万円、運転資金として1000万円が必要。初年度は赤字想定だが、2年目以降の急成長で回収予定。",
+                    milestones: [
+                        { date: "2025-04", event: "プロトタイプ完成", phase: "Seed" },
+                        { date: "2025-10", event: "β版リリース", phase: "Early" },
+                        { date: "2026-04", event: "正式サービス開始", phase: "Growth" }
+                    ],
+                    plSimulation: [
+                        { year: 1, revenue: 3000, profit: -1000 },
+                        { year: 2, revenue: 8000, profit: 500 },
+                        { year: 3, revenue: 20000, profit: 5000 },
+                        { year: 4, revenue: 45000, profit: 12000 },
+                        { year: 5, revenue: 80000, profit: 25000 }
+                    ]
+                };
+                updated = true;
+            } else if (activeModule === "M40" && !newData.m40Data) {
+                newData.m40Data = {
+                    currentFlow: ["現状1", "現状2"],
+                    bottlenecks: ["手作業によるタイムロス", "情報共有の遅れ"],
+                    improvementPlan: ["自動化ツールの導入", "チャットボット活用"]
+                };
+                updated = true;
+            } else if (activeModule === "M50" && !newData.m50Data) {
+                newData.m50Data = {
+                    themes: ["AIトレンド解説", "活用事例紹介"],
+                    schedule: ["週3回"],
+                    kpis: [
+                        { metric: "フォロワー数", target: "1000人" },
+                        { metric: "エンゲージメント率", target: "5%" }
+                    ]
+                };
+                updated = true;
+            }
+
+            if (updated) {
+                setData(newData);
+            } else {
+                alert("データは既にあるか、対象外のモジュールです");
+            }
+            setIsGenerating(false);
+        }, 1500); // 1.5s delay for effect
+    };
+
+    const handleAddCustomModule = () => {
+        const newId = "M99" as ModuleId;
+        const newModule = { id: newId, name: "カスタムモジュール", reason: "ユーザー追加" };
+
+        // Prevent duplicate
+        if (data.selectedModules.find(m => m.id === newId)) {
+            setActiveModule(newId);
+            return;
+        }
+
+        const newData = { ...data, selectedModules: [...data.selectedModules, newModule] };
+        setData(newData);
+        setActiveModule(newId);
+        alert("カスタムモジュールを追加しました");
+    };
+
 
     const handleSendMessage = async () => {
         if (!chatInput.trim()) return;
@@ -324,35 +425,43 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
             {/* Sidebar (Hidden in Presentation Mode) */}
             {!isPresentationMode && (
-                <aside className={cn(
-                    "bg-white border-r border-slate-200 flex flex-col print:hidden fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 lg:static lg:translate-x-0",
-                    isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
-                )}>
+                <aside
+                    onMouseEnter={() => setIsSidebarExpanded(true)}
+                    onMouseLeave={() => setIsSidebarExpanded(false)}
+                    className={cn(
+                        "bg-white border-r border-slate-200 flex flex-col print:hidden fixed inset-y-0 left-0 z-50 transition-all duration-300 lg:static lg:translate-x-0 overflow-hidden",
+                        isMobileMenuOpen ? "translate-x-0 w-72" : "-translate-x-full lg:translate-x-0",
+                        isSidebarExpanded ? "lg:w-72 shadow-2xl" : "lg:w-20"
+                    )}
+                >
                     <div className="p-6">
-                        <div className="flex items-center space-x-3 mb-8">
-                            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <Zap size={24} />
+                        <div className={cn("flex items-center space-x-3 mb-8 transition-all", isSidebarExpanded ? "opacity-100" : "justify-center")}>
+                            <div className="w-8 h-8 min-w-[32px] bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <Zap size={20} />
                             </div>
-                            <span className="font-bold text-xl tracking-tight">AI Strategy</span>
+                            {isSidebarExpanded && <span className="font-bold text-xl tracking-tight whitespace-nowrap">AI Strategy</span>}
                         </div>
                         <nav className="space-y-1">
-                            <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
-                                起動モジュール
-                            </div>
+                            {isSidebarExpanded && (
+                                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3 whitespace-nowrap">
+                                    起動モジュール
+                                </div>
+                            )}
                             {data.selectedModules.map((m) => (
                                 <button
                                     key={m.id}
                                     onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
                                     className={cn(
-                                        "w-full flex items-center px-3 py-2.5 rounded-xl transition-all",
+                                        "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap",
                                         activeModule === m.id
                                             ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
-                                            : "text-slate-600 hover:bg-slate-50"
+                                            : "text-slate-600 hover:bg-slate-50",
+                                        !isSidebarExpanded && "justify-center px-0"
                                     )}
                                 >
-                                    <Layers size={18} className="mr-3 opacity-70" />
-                                    <span className="text-sm">{m.name}</span>
-                                    {activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                                    <Layers size={18} className={cn("opacity-70 flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
+                                    {isSidebarExpanded && <span className="text-sm">{m.name}</span>}
+                                    {isSidebarExpanded && activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />}
                                 </button>
                             ))}
 
@@ -363,30 +472,51 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                             <button
                                 onClick={() => setActiveModule("M92")}
                                 className={cn(
-                                    "w-full flex items-center px-3 py-2.5 rounded-xl transition-all",
+                                    "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap",
                                     activeModule === "M92"
                                         ? "bg-purple-50 text-purple-600 font-bold shadow-sm"
-                                        : "text-slate-600 hover:bg-slate-50"
+                                        : "text-slate-600 hover:bg-slate-50",
+                                    !isSidebarExpanded && "justify-center px-0"
                                 )}
-
                             >
-                                <Library size={18} className="mr-3 opacity-70" />
-                                <span className="text-sm">履歴管理 (M92)</span>
+                                <Library size={18} className={cn("opacity-70 flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
+                                {isSidebarExpanded && <span className="text-sm">履歴管理 (M92)</span>}
                             </button>
                         </nav>
                     </div>
 
-                    <div className="mt-auto p-6 space-y-4 text-center pb-24 lg:pb-6">
-                        <button
-                            onClick={onRestart}
-                            className="w-full flex items-center justify-center px-4 py-3 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all border border-slate-100 group"
-                        >
-                            <History size={18} className="mr-3 group-hover:rotate-[-45deg] transition-transform" />
-                            <span className="text-sm font-bold">最初からやり直す</span>
-                        </button>
-                        <div className="p-4 bg-slate-900 text-white rounded-2xl">
-                            <div className="text-xs opacity-70 mb-2">現在のフェーズ</div>
-                            <div className="text-sm font-bold">戦略策定・構造化</div>
+                    <div className={cn("mt-auto p-6 space-y-4 text-center pb-24 lg:pb-6", !isSidebarExpanded && "p-2 pb-24")}>
+                        {isSidebarExpanded && (
+                            <button
+                                onClick={onRestart}
+                                className="w-full flex items-center justify-center px-4 py-3 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all border border-slate-100 group"
+                            >
+                                <History size={18} className="mr-3 group-hover:rotate-[-45deg] transition-transform" />
+                                <span className="text-sm font-bold">最初からやり直す</span>
+                            </button>
+                        )}
+                        <div className={cn("p-4 bg-slate-900 text-white rounded-2xl transition-all overflow-hidden text-left", !isSidebarExpanded && "p-2 flex items-center justify-center")}>
+                            {isSidebarExpanded ? (
+                                <>
+                                    <div className="text-xs opacity-70 mb-1">現在のフェーズ</div>
+                                    <div className="text-sm font-bold whitespace-nowrap mb-3">戦略策定・構造化</div>
+
+                                    <div className="pt-3 border-t border-slate-700">
+                                        <div className="flex items-center text-xs opacity-70 mb-1">
+                                            <CheckCircle2 size={12} className="mr-1 text-slate-500" />
+                                            <span>次のフェーズへ</span>
+                                        </div>
+                                        <div className="text-xs font-bold text-blue-300">
+                                            実行計画の策定
+                                        </div>
+                                        <div className="text-[10px] text-slate-500 mt-1 leading-tight">
+                                            全モジュールの詳細データ生成で完了
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <Activity size={18} />
+                            )}
                         </div>
                     </div>
                 </aside>
@@ -501,10 +631,18 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                         </div>
                         {activeModule !== "M92" && (
                             <div className="flex items-center space-x-2 w-full lg:w-auto mt-4 lg:mt-0">
-                                <button className="flex-1 lg:flex-none px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-all">
+                                <button
+                                    onClick={() => {
+                                        setIsChatOpen(true);
+                                    }}
+                                    className="flex-1 lg:flex-none px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-bold transition-all active:scale-95"
+                                >
                                     AIに詳しく聞く
                                 </button>
-                                <button className="flex-1 lg:flex-none px-4 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100">
+                                <button
+                                    onClick={handleGenerateDetail}
+                                    className="flex-1 lg:flex-none px-4 py-2 text-sm bg-blue-600 text-white border border-blue-600 rounded-xl font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-100 whitespace-nowrap active:scale-95"
+                                >
                                     詳細データを生成
                                 </button>
                             </div>
@@ -512,8 +650,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                        {/* Analysis Workspace (Large) */}
-                        <div className="lg:col-span-3 space-y-8">
+                        {/* Analysis Workspace (Full Width now) */}
+                        <div className="lg:col-span-4 space-y-8">
                             <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm p-6 lg:p-10 min-h-[600px] relative overflow-hidden">
                                 {/* Watermark for skeleton */}
                                 <div className="absolute top-10 right-10 flex items-center space-x-2 text-slate-100 select-none">
@@ -527,7 +665,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                             <div className="space-y-6">
                                                 <div className="flex items-center space-x-3 text-rose-600 font-black text-xs uppercase tracking-widest">
                                                     <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">!</div>
-                                                    <span>Core Problems</span>
+                                                    <span>課題 (Core Problems)</span>
                                                 </div>
                                                 <div className="space-y-4">
                                                     {data.m00Data.problems.map((p, i) => (
@@ -550,7 +688,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                             <div className="space-y-6">
                                                 <div className="flex items-center space-x-3 text-blue-600 font-black text-xs uppercase tracking-widest">
                                                     <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">✓</div>
-                                                    <span>Target Goals</span>
+                                                    <span>目標 (Target Goals)</span>
                                                 </div>
                                                 <div className="space-y-4">
                                                     {data.m00Data.goals.map((g, i) => (
@@ -605,7 +743,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 </div>
                                             </div>
                                             <div className="space-y-6">
-                                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4">Action Roadmap</h4>
+                                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4">アクションロードマップ</h4>
                                                 <div className="grid grid-cols-1 gap-4">
                                                     {data.m20Data.actionPlans.map((plan, i) => (
                                                         <div key={i} className="flex items-center p-6 bg-white border border-slate-100 rounded-[2rem] shadow-sm hover:shadow-md transition-all group">
@@ -632,7 +770,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="space-y-10">
                                             <div className="flex items-center space-x-3 mb-8">
                                                 <Globe className="text-blue-500" />
-                                                <span className="font-black text-sm uppercase tracking-widest">Market Environment & Competitive Landscape</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">市場環境・競合分析 (Market Analysis)</span>
                                             </div>
                                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                                                 <div className="h-32 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col justify-end p-6 relative">
@@ -713,8 +851,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                             <Calculator className="text-emerald-400" size={24} />
                                                         </div>
                                                         <div>
-                                                            <div className="font-bold text-xl">5-Year PL Simulation</div>
-                                                            <div className="text-xs text-slate-400">Parameter Adjustment</div>
+                                                            <div className="font-bold text-xl">5カ年 収支シミュレーション</div>
+                                                            <div className="text-xs text-slate-400">パラメータ調整</div>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col sm:flex-row items-center gap-6 bg-white/5 p-4 rounded-2xl border border-white/10">
@@ -744,6 +882,28 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                             />
                                                         </div>
                                                     </div>
+                                                </div>
+
+                                                {/* Scenario Presets (Developer Idea) */}
+                                                <div className="flex sm:justify-end gap-2 mb-8 relative z-10 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
+                                                    <button
+                                                        onClick={() => { setRevenueMultiplier(1.1); setCostMultiplier(1.0); }}
+                                                        className="px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-medium border border-white/5 transition-all whitespace-nowrap"
+                                                    >
+                                                        🐢 堅実成長プラン
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setRevenueMultiplier(1.5); setCostMultiplier(1.1); }}
+                                                        className="px-3 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-medium border border-emerald-500/20 transition-all whitespace-nowrap"
+                                                    >
+                                                        🚀 積極投資プラン
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setRevenueMultiplier(2.5); setCostMultiplier(1.4); }}
+                                                        className="px-3 py-1.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 text-xs font-medium border border-purple-500/20 transition-all whitespace-nowrap"
+                                                    >
+                                                        🦄 ユニコーンモード
+                                                    </button>
                                                 </div>
 
                                                 <div className="grid grid-cols-5 gap-4 items-end h-64 relative z-10 px-2">
@@ -822,7 +982,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-amber-600">
                                                 <Cpu />
-                                                <span className="font-black text-sm uppercase tracking-widest">Operation Optimization</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">オペレーション最適化 (Operation)</span>
                                             </div>
                                             <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
                                                 <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">現状のボトルネック</h5>
@@ -862,7 +1022,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-pink-600">
                                                 <Smartphone />
-                                                <span className="font-black text-sm uppercase tracking-widest">Content & SNS Strategy</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">コンテンツ・SNS戦略 (Marketing)</span>
                                             </div>
                                             <div className="grid grid-cols-3 gap-6">
                                                 {data.m50Data.kpis.map((k, i) => (
@@ -901,7 +1061,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="space-y-8">
                                             <div className="flex items-center space-x-3 mb-8 text-purple-600">
                                                 <Library />
-                                                <span className="font-black text-sm uppercase tracking-widest">History Management</span>
+                                                <span className="font-black text-sm uppercase tracking-widest">履歴管理 (History)</span>
                                             </div>
 
                                             <div className="grid grid-cols-1 gap-4">
@@ -963,165 +1123,193 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 )}
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
-                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
-                                                        <Layers size={16} className="mr-2" /> Key Features
-                                                    </h5>
-                                                    <div className="space-y-4">
-                                                        {data.m60Data.features.map((f, i) => (
-                                                            <div key={i} className="flex items-center space-x-3 group">
-                                                                <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                                                    F{i + 1}
+                                            {/* Floating Chat Button & Drawer */}
+                                            <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end print:hidden">
+                                                {/* Chat Window */}
+                                                {isChatOpen && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                        className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden"
+                                                    >
+                                                        <div className="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                                                            <h4 className="font-bold flex items-center text-sm">
+                                                                <LightbulbIcon className="mr-2 text-yellow-400" size={16} />
+                                                                AIアドバイザー (AI Advisor)
+                                                            </h4>
+                                                            <div className="flex items-center space-x-2">
+                                                                <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">BETA</span>
+                                                                <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white">
+                                                                    <X size={16} />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-700">
+                                                            <div className="flex items-start">
+                                                                <div className="w-6 h-6 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-[10px] font-bold mr-2">AI</div>
+                                                                <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-xs text-slate-300 leading-relaxed">
+                                                                    {analysis.aiNote}
                                                                 </div>
-                                                                {isEditing ? (
-                                                                    <input
-                                                                        className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
-                                                                        value={f}
-                                                                        onChange={(e) => updateM60('features', i, e.target.value)}
-                                                                    />
-                                                                ) : (
-                                                                    <div className="font-bold text-slate-700">{f}</div>
-                                                                )}
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                            {chatHistory.map((msg, i) => (
+                                                                <div key={i} className={cn("flex items-start", msg.role === "user" ? "flex-row-reverse" : "")}>
+                                                                    <div className={cn(
+                                                                        "w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold",
+                                                                        msg.role === "user" ? "bg-slate-200 text-slate-900 ml-2" : "bg-blue-600 mr-2"
+                                                                    )}>
+                                                                        {msg.role === "user" ? "You" : "AI"}
+                                                                    </div>
+                                                                    <div className={cn(
+                                                                        "p-2.5 rounded-2xl text-xs max-w-[85%] leading-relaxed",
+                                                                        msg.role === "user" ? "bg-white text-slate-900 rounded-tr-none" : "bg-slate-800 text-slate-300 rounded-tl-none"
+                                                                    )}>
+                                                                        {msg.parts}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            {isChatLoading && (
+                                                                <div className="flex items-center space-x-2 text-slate-400 text-xs ml-9">
+                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
+                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100" />
+                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200" />
+                                                                </div>
+                                                            )}
+                                                        </div>
 
-                                                <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
-                                                    <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
-                                                        <Code size={16} className="mr-2" /> Tech Stack Strategy
-                                                    </h5>
-                                                    <div className="space-y-3">
-                                                        {data.m60Data.techStack.map((t, i) => (
-                                                            <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
-                                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                                {isEditing ? (
-                                                                    <input
-                                                                        className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
-                                                                        value={t}
-                                                                        onChange={(e) => updateM60('techStack', i, e.target.value)}
-                                                                    />
-                                                                ) : (
-                                                                    <div className="font-mono text-sm text-emerald-400">{t}</div>
-                                                                )}
+                                                        <div className="p-3 bg-slate-800 border-t border-slate-700">
+                                                            <div className="flex items-center bg-slate-900 rounded-xl px-3 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                                                <input
+                                                                    className="flex-1 bg-transparent text-white text-xs focus:outline-none"
+                                                                    placeholder="質問を入力..."
+                                                                    value={chatInput}
+                                                                    onChange={(e) => setChatInput(e.target.value)}
+                                                                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSendMessage()}
+                                                                />
+                                                                <button
+                                                                    onClick={handleSendMessage}
+                                                                    disabled={!chatInput.trim() || isChatLoading}
+                                                                    className="ml-2 text-blue-500 hover:text-blue-400 disabled:opacity-50 transition-colors"
+                                                                >
+                                                                    <Send size={16} />
+                                                                </button>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
+                                                        </div>
+                                                    </motion.div>
+                                                )}
+
+                                                <button
+                                                    onClick={() => setIsChatOpen(!isChatOpen)}
+                                                    className="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group"
+                                                >
+                                                    {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+                                                    {!isChatOpen && (
+                                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+                                                    )}
+                                                    {/* Tooltip */}
+                                                    <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                        AI Advisor
+                                                    </span>
+                                                </button>
                                             </div>
                                         </div>
-                                    )}
-
-                                    {/* Generic Fallback for others (M91 only now) */}
-                                    {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92"].includes(activeModule) && (
-                                        <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
-                                            <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
-                                                {activeModule === "M40" && <Cpu size={32} />}
-                                                {activeModule === "M50" && <Smartphone size={32} />}
-                                                {(activeModule === "M60" || activeModule === "M61") && <Library size={32} />}
-                                                {activeModule === "M91" && <Calculator size={32} />}
-                                            </div>
-                                            <div className="text-center">
-                                                <h3 className="font-black text-xl mb-2">モジュール：{data.selectedModules.find(m => m.id === activeModule)?.name}</h3>
-                                                <p className="text-slate-500 max-w-sm mx-auto text-sm">
-                                                    AIが現在詳細な構成案を作成中です。プレビューを表示するには、上の「詳細データを生成」をクリックしてください。
-                                                </p>
-                                            </div>
-                                            <div className="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                <motion.div
-                                                    initial={{ width: "30%" }} animate={{ width: "80%" }} transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
-                                                    className="h-full bg-blue-500"
-                                                />
+                                    );
+}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
+                                            <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
+                                                <Layers size={16} className="mr-2" /> Key Features
+                                            </h5>
+                                            <div className="space-y-4">
+                                                {data.m60Data.features.map((f, i) => (
+                                                    <div key={i} className="flex items-center space-x-3 group">
+                                                        <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                            F{i + 1}
+                                                        </div>
+                                                        {isEditing ? (
+                                                            <input
+                                                                className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
+                                                                value={f}
+                                                                onChange={(e) => updateM60('features', i, e.target.value)}
+                                                            />
+                                                        ) : (
+                                                            <div className="font-bold text-slate-700">{f}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Config Panel / Chat Advisor (Right) */}
-                        <div className="space-y-6 print:hidden">
-                            {/* Chat Interface */}
-                            <div className="bg-slate-900 text-white rounded-3xl overflow-hidden shadow-xl flex flex-col h-[600px]">
-                                <div className="p-6 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
-                                    <h4 className="font-bold flex items-center">
-                                        <LightbulbIcon className="mr-2 text-yellow-400" size={18} />
-                                        AI Advisor Chat
-                                    </h4>
-                                    <span className="text-[10px] bg-blue-600 px-2 py-1 rounded text-white font-bold">BETA</span>
-                                </div>
-
-                                <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                    <div className="flex items-start">
-                                        <div className="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold mr-3">AI</div>
-                                        <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-slate-300">
-                                            {analysis.aiNote}
+                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
+                                            <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
+                                                <Code size={16} className="mr-2" /> Tech Stack Strategy
+                                            </h5>
+                                            <div className="space-y-3">
+                                                {data.m60Data.techStack.map((t, i) => (
+                                                    <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                        {isEditing ? (
+                                                            <input
+                                                                className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
+                                                                value={t}
+                                                                onChange={(e) => updateM60('techStack', i, e.target.value)}
+                                                            />
+                                                        ) : (
+                                                            <div className="font-mono text-sm text-emerald-400">{t}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                    {chatHistory.map((msg, i) => (
-                                        <div key={i} className={cn("flex items-start", msg.role === "user" ? "flex-row-reverse" : "")}>
-                                            <div className={cn(
-                                                "w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold",
-                                                msg.role === "user" ? "bg-slate-200 text-slate-900 ml-3" : "bg-blue-600 mr-3"
-                                            )}>
-                                                {msg.role === "user" ? "You" : "AI"}
-                                            </div>
-                                            <div className={cn(
-                                                "p-3 rounded-2xl text-sm max-w-[80%]",
-                                                msg.role === "user" ? "bg-white text-slate-900 rounded-tr-none" : "bg-slate-800 text-slate-300 rounded-tl-none"
-                                            )}>
-                                                {msg.parts}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    {isChatLoading && (
-                                        <div className="flex items-start">
-                                            <div className="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-xs font-bold mr-3">AI</div>
-                                            <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-sm text-slate-400 animate-pulse">
-                                                Thinking...
-                                            </div>
-                                        </div>
+                                </div>
                                     )}
-                                </div>
 
-                                <div className="p-4 bg-slate-800 border-t border-slate-700">
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            handleSendMessage();
-                                        }}
-                                        className="flex items-center space-x-2"
-                                    >
-                                        <input
-                                            type="text"
-                                            value={chatInput}
-                                            onChange={(e) => setChatInput(e.target.value)}
-                                            placeholder="Ask specific advice..."
-                                            className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-                                        />
-                                        <button
-                                            type="submit"
-                                            disabled={!chatInput.trim() || isChatLoading}
-                                            className="p-2 bg-blue-600 rounded-xl text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            <Send size={18} />
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-
-                            {/* Quick Actions */}
-                            <div className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer">
-                                <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                                    <Plus />
-                                </div>
-                                <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">Add Custom Module</div>
+                                {/* Generic Fallback for others (M91 only now) */}
+                                {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92"].includes(activeModule) && (
+                                    <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
+                                        <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
+                                            {activeModule === "M40" && <Cpu size={32} />}
+                                            {activeModule === "M50" && <Smartphone size={32} />}
+                                            {(activeModule === "M60" || activeModule === "M61") && <Library size={32} />}
+                                            {activeModule === "M91" && <Calculator size={32} />}
+                                        </div>
+                                        <div className="text-center">
+                                            <h3 className="font-black text-xl mb-2">モジュール：{data.selectedModules.find(m => m.id === activeModule)?.name}</h3>
+                                            <p className="text-slate-500 max-w-sm mx-auto text-sm">
+                                                AIが現在詳細な構成案を作成中です。プレビューを表示するには、上の「詳細データを生成」をクリックしてください。
+                                            </p>
+                                        </div>
+                                        <div className="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: "30%" }} animate={{ width: "80%" }} transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
+                                                className="h-full bg-blue-500"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
-                </div>
-            </main>
+
+
+
+
+                    {/* Quick Actions */}
+                    <div
+                        onClick={handleAddCustomModule}
+                        className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer active:scale-95"
+                    >
+                        <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                            <Plus />
+                        </div>
+                        <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">カスタムモジュール追加 (Add Custom Module)</div>
+                    </div>
+                </div >
+        </div >
+        </div >
+            </main >
         </div >
     );
 }
