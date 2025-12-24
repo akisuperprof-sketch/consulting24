@@ -89,7 +89,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
         const updated = [newReport, ...savedReports];
         setSavedReports(updated);
         localStorage.setItem("consulting_history", JSON.stringify(updated));
-        alert("履歴に保存しました");
+
         setShowExportMenu(false);
     };
 
@@ -102,7 +102,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
     const loadHistoryItem = (report: { data: AnalysisResult }) => {
         setData(report.data);
         setActiveModule(report.data.selectedModules[0].id);
-        alert("過去のレポートを読み込みました");
+
     };
 
     // Sync props to state if props change (optional)
@@ -209,7 +209,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
         const newData = { ...data, selectedModules: [...data.selectedModules, newModule] };
         setData(newData);
         setActiveModule(newId);
-        alert("カスタムモジュールを追加しました");
+
     };
 
 
