@@ -44,7 +44,7 @@ import {
 import { useState, useEffect } from "react";
 import { AnalysisResult, chatWithAI } from "@/app/actions";
 
-import { ModuleId } from "@/lib/modules";
+import { ModuleId, MODULES } from "@/lib/modules";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -465,6 +465,30 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                 </button>
                             ))}
 
+                            {/* Unselected Modules */}
+                            {isSidebarExpanded && (
+                                <div className="mt-6 mb-2 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                    その他 (利用可能)
+                                </div>
+                            )}
+                            {Object.values(MODULES)
+                                .filter(m => !data.selectedModules.some(sm => sm.id === m.id) && !["M90", "M91", "M92"].includes(m.id))
+                                .map(m => (
+                                    <button
+                                        key={m.id}
+                                        onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
+                                        className={cn(
+                                            "w-full flex items-center px-3 py-2 rounded-lg transition-all whitespace-nowrap opacity-60 hover:opacity-100",
+                                            activeModule === m.id ? "bg-slate-100 text-slate-900 font-bold opacity-100" : "text-slate-500 hover:bg-slate-50",
+                                            !isSidebarExpanded && "justify-center px-0"
+                                        )}
+                                    >
+                                        <Layers size={16} className={cn("flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
+                                        {isSidebarExpanded && <span className="text-xs">{m.name}</span>}
+                                    </button>
+                                ))
+                            }
+
                             <div className="my-4 border-t border-slate-100" />
                             <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 px-3">
                                 ユーティリティ
@@ -501,16 +525,14 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     <div className="text-xs opacity-70 mb-1">現在のフェーズ</div>
                                     <div className="text-sm font-bold whitespace-nowrap mb-3">戦略策定・構造化</div>
 
-                                    <div className="pt-3 border-t border-slate-700">
-                                        <div className="flex items-center text-xs opacity-70 mb-1">
-                                            <CheckCircle2 size={12} className="mr-1 text-slate-500" />
-                                            <span>次のフェーズへ</span>
+                                    <div className="pt-3 border-t border-slate-700 relative">
+                                        <div className="flex items-center text-xs font-bold text-blue-300 mb-2">
+                                            <ArrowUpRight size={14} className="mr-1" />
+                                            <span>次のおすすめアクション</span>
                                         </div>
-                                        <div className="text-xs font-bold text-blue-300">
-                                            実行計画の策定
-                                        </div>
-                                        <div className="text-[10px] text-slate-500 mt-1 leading-tight">
-                                            全モジュールの詳細データ生成で完了
+                                        <div className="p-3 bg-slate-800/50 rounded-lg border border-blue-500/30 text-[11px] text-slate-200 leading-relaxed relative overflow-hidden group">
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-blue-500" />
+                                            各モジュールの<span className="font-bold text-white">「詳細データを生成」</span>ボタンを押し、分析を完了させてください。
                                         </div>
                                     </div>
                                 </>
@@ -1123,189 +1145,192 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 )}
                                             </div>
 
-                                            {/* Floating Chat Button & Drawer */}
-                                            <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end print:hidden">
-                                                {/* Chat Window */}
-                                                {isChatOpen && (
-                                                    <motion.div
-                                                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                                                        className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden"
-                                                    >
-                                                        <div className="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
-                                                            <h4 className="font-bold flex items-center text-sm">
-                                                                <LightbulbIcon className="mr-2 text-yellow-400" size={16} />
-                                                                AIアドバイザー (AI Advisor)
-                                                            </h4>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">BETA</span>
-                                                                <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white">
-                                                                    <X size={16} />
-                                                                </button>
+                                        </div>
+                                    )}
+
+                                    {/* Floating Chat Button & Drawer */}
+                                    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end print:hidden">
+                                        {/* Chat Window */}
+                                        {isChatOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                                                className="mb-4 w-[350px] sm:w-[400px] h-[500px] bg-slate-900 text-white rounded-3xl shadow-2xl border border-slate-700 flex flex-col overflow-hidden"
+                                            >
+                                                <div className="p-4 bg-slate-800 border-b border-slate-700 flex items-center justify-between">
+                                                    <h4 className="font-bold flex items-center text-sm">
+                                                        <LightbulbIcon className="mr-2 text-yellow-400" size={16} />
+                                                        AIアドバイザー (AI Advisor)
+                                                    </h4>
+                                                    <div className="flex items-center space-x-2">
+                                                        <span className="text-[10px] bg-blue-600 px-2 py-0.5 rounded text-white font-bold">BETA</span>
+                                                        <button onClick={() => setIsChatOpen(false)} className="text-slate-400 hover:text-white">
+                                                            <X size={16} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-700">
+                                                    <div className="flex items-start">
+                                                        <div className="w-6 h-6 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-[10px] font-bold mr-2">AI</div>
+                                                        <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-xs text-slate-300 leading-relaxed">
+                                                            {analysis.aiNote}
+                                                        </div>
+                                                    </div>
+                                                    {chatHistory.map((msg, i) => (
+                                                        <div key={i} className={cn("flex items-start", msg.role === "user" ? "flex-row-reverse" : "")}>
+                                                            <div className={cn(
+                                                                "w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold",
+                                                                msg.role === "user" ? "bg-slate-200 text-slate-900 ml-2" : "bg-blue-600 mr-2"
+                                                            )}>
+                                                                {msg.role === "user" ? "You" : "AI"}
+                                                            </div>
+                                                            <div className={cn(
+                                                                "p-2.5 rounded-2xl text-xs max-w-[85%] leading-relaxed",
+                                                                msg.role === "user" ? "bg-white text-slate-900 rounded-tr-none" : "bg-slate-800 text-slate-300 rounded-tl-none"
+                                                            )}>
+                                                                {msg.parts}
                                                             </div>
                                                         </div>
-
-                                                        <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-700">
-                                                            <div className="flex items-start">
-                                                                <div className="w-6 h-6 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-[10px] font-bold mr-2">AI</div>
-                                                                <div className="bg-slate-800 p-3 rounded-2xl rounded-tl-none text-xs text-slate-300 leading-relaxed">
-                                                                    {analysis.aiNote}
-                                                                </div>
-                                                            </div>
-                                                            {chatHistory.map((msg, i) => (
-                                                                <div key={i} className={cn("flex items-start", msg.role === "user" ? "flex-row-reverse" : "")}>
-                                                                    <div className={cn(
-                                                                        "w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold",
-                                                                        msg.role === "user" ? "bg-slate-200 text-slate-900 ml-2" : "bg-blue-600 mr-2"
-                                                                    )}>
-                                                                        {msg.role === "user" ? "You" : "AI"}
-                                                                    </div>
-                                                                    <div className={cn(
-                                                                        "p-2.5 rounded-2xl text-xs max-w-[85%] leading-relaxed",
-                                                                        msg.role === "user" ? "bg-white text-slate-900 rounded-tr-none" : "bg-slate-800 text-slate-300 rounded-tl-none"
-                                                                    )}>
-                                                                        {msg.parts}
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                            {isChatLoading && (
-                                                                <div className="flex items-center space-x-2 text-slate-400 text-xs ml-9">
-                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
-                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100" />
-                                                                    <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200" />
-                                                                </div>
-                                                            )}
+                                                    ))}
+                                                    {isChatLoading && (
+                                                        <div className="flex items-center space-x-2 text-slate-400 text-xs ml-9">
+                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" />
+                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-100" />
+                                                            <div className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce delay-200" />
                                                         </div>
-
-                                                        <div className="p-3 bg-slate-800 border-t border-slate-700">
-                                                            <div className="flex items-center bg-slate-900 rounded-xl px-3 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
-                                                                <input
-                                                                    className="flex-1 bg-transparent text-white text-xs focus:outline-none"
-                                                                    placeholder="質問を入力..."
-                                                                    value={chatInput}
-                                                                    onChange={(e) => setChatInput(e.target.value)}
-                                                                    onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSendMessage()}
-                                                                />
-                                                                <button
-                                                                    onClick={handleSendMessage}
-                                                                    disabled={!chatInput.trim() || isChatLoading}
-                                                                    className="ml-2 text-blue-500 hover:text-blue-400 disabled:opacity-50 transition-colors"
-                                                                >
-                                                                    <Send size={16} />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </motion.div>
-                                                )}
-
-                                                <button
-                                                    onClick={() => setIsChatOpen(!isChatOpen)}
-                                                    className="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group"
-                                                >
-                                                    {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
-                                                    {!isChatOpen && (
-                                                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
                                                     )}
-                                                    {/* Tooltip */}
-                                                    <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                                        AI Advisor
-                                                    </span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    {activeModule === "M60" && data.m60Data && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
-                                                <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
-                                                    <Layers size={16} className="mr-2" /> Key Features
-                                                </h5>
-                                                <div className="space-y-4">
-                                                    {data.m60Data.features.map((f, i) => (
-                                                        <div key={i} className="flex items-center space-x-3 group">
-                                                            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                                                F{i + 1}
-                                                            </div>
-                                                            {isEditing ? (
-                                                                <input
-                                                                    className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
-                                                                    value={f}
-                                                                    onChange={(e) => updateM60('features', i, e.target.value)}
-                                                                />
-                                                            ) : (
-                                                                <div className="font-bold text-slate-700">{f}</div>
-                                                            )}
-                                                        </div>
-                                                    ))}
                                                 </div>
-                                            </div>
 
-                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
-                                                <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
-                                                    <Code size={16} className="mr-2" /> Tech Stack Strategy
-                                                </h5>
-                                                <div className="space-y-3">
-                                                    {data.m60Data.techStack.map((t, i) => (
-                                                        <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                            {isEditing ? (
-                                                                <input
-                                                                    className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
-                                                                    value={t}
-                                                                    onChange={(e) => updateM60('techStack', i, e.target.value)}
-                                                                />
-                                                            ) : (
-                                                                <div className="font-mono text-sm text-emerald-400">{t}</div>
-                                                            )}
-                                                        </div>
-                                                    ))}
+                                                <div className="p-3 bg-slate-800 border-t border-slate-700">
+                                                    <div className="flex items-center bg-slate-900 rounded-xl px-3 py-2 border border-slate-700 focus-within:border-blue-500 transition-colors">
+                                                        <input
+                                                            className="flex-1 bg-transparent text-white text-xs focus:outline-none"
+                                                            placeholder="質問を入力..."
+                                                            value={chatInput}
+                                                            onChange={(e) => setChatInput(e.target.value)}
+                                                            onKeyDown={(e) => e.key === "Enter" && !e.nativeEvent.isComposing && handleSendMessage()}
+                                                        />
+                                                        <button
+                                                            onClick={handleSendMessage}
+                                                            disabled={!chatInput.trim() || isChatLoading}
+                                                            className="ml-2 text-blue-500 hover:text-blue-400 disabled:opacity-50 transition-colors"
+                                                        >
+                                                            <Send size={16} />
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            </motion.div>
+                                        )}
+
+                                        <button
+                                            onClick={() => setIsChatOpen(!isChatOpen)}
+                                            className="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group"
+                                        >
+                                            {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
+                                            {!isChatOpen && (
+                                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+                                            )}
+                                            {/* Tooltip */}
+                                            <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                                                AI Advisor
+                                            </span>
+                                        </button>
+                                    </div>
+                                </div>
+                                {activeModule === "M60" && data.m60Data && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
+                                            <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
+                                                <Layers size={16} className="mr-2" /> Key Features
+                                            </h5>
+                                            <div className="space-y-4">
+                                                {data.m60Data.features.map((f, i) => (
+                                                    <div key={i} className="flex items-center space-x-3 group">
+                                                        <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                            F{i + 1}
+                                                        </div>
+                                                        {isEditing ? (
+                                                            <input
+                                                                className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
+                                                                value={f}
+                                                                onChange={(e) => updateM60('features', i, e.target.value)}
+                                                            />
+                                                        ) : (
+                                                            <div className="font-bold text-slate-700">{f}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
+
+                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
+                                            <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
+                                                <Code size={16} className="mr-2" /> Tech Stack Strategy
+                                            </h5>
+                                            <div className="space-y-3">
+                                                {data.m60Data.techStack.map((t, i) => (
+                                                    <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                        {isEditing ? (
+                                                            <input
+                                                                className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
+                                                                value={t}
+                                                                onChange={(e) => updateM60('techStack', i, e.target.value)}
+                                                            />
+                                                        ) : (
+                                                            <div className="font-mono text-sm text-emerald-400">{t}</div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                     )}
 
-                                {/* Generic Fallback for others (M91 only now) */}
-                                {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92"].includes(activeModule) && (
-                                    <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
-                                        <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
-                                            {activeModule === "M40" && <Cpu size={32} />}
-                                            {activeModule === "M50" && <Smartphone size={32} />}
-                                            {(activeModule === "M60" || activeModule === "M61") && <Library size={32} />}
-                                            {activeModule === "M91" && <Calculator size={32} />}
-                                        </div>
-                                        <div className="text-center">
-                                            <h3 className="font-black text-xl mb-2">モジュール：{data.selectedModules.find(m => m.id === activeModule)?.name}</h3>
-                                            <p className="text-slate-500 max-w-sm mx-auto text-sm">
-                                                AIが現在詳細な構成案を作成中です。プレビューを表示するには、上の「詳細データを生成」をクリックしてください。
-                                            </p>
-                                        </div>
-                                        <div className="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                            <motion.div
-                                                initial={{ width: "30%" }} animate={{ width: "80%" }} transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
-                                                className="h-full bg-blue-500"
-                                            />
-                                        </div>
+                            {/* Generic Fallback for others (M91 only now) */}
+                            {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92"].includes(activeModule) && (
+                                <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
+                                    <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
+                                        {activeModule === "M40" && <Cpu size={32} />}
+                                        {activeModule === "M50" && <Smartphone size={32} />}
+                                        {(activeModule === "M60" || activeModule === "M61") && <Library size={32} />}
+                                        {activeModule === "M91" && <Calculator size={32} />}
                                     </div>
-                                )}
-                            </div>
+                                    <div className="text-center">
+                                        <h3 className="font-black text-xl mb-2">モジュール：{data.selectedModules.find(m => m.id === activeModule)?.name}</h3>
+                                        <p className="text-slate-500 max-w-sm mx-auto text-sm">
+                                            AIが現在詳細な構成案を作成中です。プレビューを表示するには、上の「詳細データを生成」をクリックしてください。
+                                        </p>
+                                    </div>
+                                    <div className="w-64 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: "30%" }} animate={{ width: "80%" }} transition={{ duration: 5, repeat: Infinity, repeatType: "reverse" }}
+                                            className="h-full bg-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
+                </div>
 
 
 
 
-                    {/* Quick Actions */}
-                    <div
-                        onClick={handleAddCustomModule}
-                        className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer active:scale-95"
-                    >
-                        <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
-                            <Plus />
-                        </div>
-                        <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">カスタムモジュール追加 (Add Custom Module)</div>
+                {/* Quick Actions */}
+                <div
+                    onClick={handleAddCustomModule}
+                    className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer active:scale-95"
+                >
+                    <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                        <Plus />
                     </div>
-                </div >
+                    <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">カスタムモジュール追加 (Add Custom Module)</div>
+                </div>
+        </div >
         </div >
         </div >
             </main >
