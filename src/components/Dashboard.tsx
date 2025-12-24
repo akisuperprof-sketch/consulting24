@@ -885,7 +885,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         isSidebarExpanded ? "lg:w-72 shadow-2xl" : "lg:w-20"
                     )}
                 >
-                    <div className="p-6">
+                    <div className="flex-1 overflow-y-auto p-6">
                         <div className={cn("flex items-center space-x-3 mb-8 transition-all", isSidebarExpanded ? "opacity-100" : "justify-center")}>
                             <div className="w-8 h-8 min-w-[32px] bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                                 <Zap size={20} />
@@ -1009,7 +1009,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         </nav>
                     </div>
 
-                    <div className={cn("mt-auto p-6 space-y-4 text-center pb-24 lg:pb-6", !isSidebarExpanded && "p-2 pb-24")}>
+                    <div className={cn("flex-shrink-0 p-6 space-y-4 text-center pb-24 lg:pb-6 border-t border-slate-100", !isSidebarExpanded && "p-2 pb-24")}>
                         {isSidebarExpanded && (
                             <button
                                 onClick={onRestart}
