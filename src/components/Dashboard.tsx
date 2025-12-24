@@ -59,9 +59,10 @@ function cn(...inputs: ClassValue[]) {
 interface DashboardProps {
     analysis: AnalysisResult;
     onRestart: () => void;
+    onUpdate?: (data: AnalysisResult) => void;
 }
 
-export default function Dashboard({ analysis, onRestart }: DashboardProps) {
+export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardProps) {
     const [activeModule, setActiveModule] = useState<ModuleId>(analysis.selectedModules[0].id);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -71,6 +72,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
     // Data State (for editing)
     const [data, setData] = useState<AnalysisResult>(analysis);
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingTitle, setIsEditingTitle] = useState(false);
+    const [tempTitle, setTempTitle] = useState("");
 
     // History State
     const [savedReports, setSavedReports] = useState<{ id: string, date: string, title: string, data: AnalysisResult }[]>([]);
@@ -81,6 +84,13 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
             setSavedReports(JSON.parse(saved));
         }
     }, []);
+
+    // Auto-save callback
+    useEffect(() => {
+        if (onUpdate) {
+            onUpdate(data);
+        }
+    }, [data, onUpdate]);
 
     const saveToHistory = () => {
         const newReport = {
@@ -587,8 +597,28 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                 <Menu size={20} />
                             </button>
                         )}
-                        {!isPresentationMode && <span className="text-slate-400 print:hidden hidden sm:inline">プロジェクト /</span>}
-                        <span className={cn("font-bold text-slate-900 text-lg lg:text-xl print:text-3xl truncate transition-all max-w-[200px] lg:max-w-md", isPresentationMode && "text-2xl lg:text-3xl max-w-full")}>{data.refinedGoal}</span>
+                        {!isPresentationMode && <span className="text-slate-400 print:hidden hidden sm:inline">{data.id ? `#${data.id} ` : "プロジェクト /"}</span>}
+                        {isEditingTitle ? (
+                            <input
+                                className="font-bold text-slate-900 text-lg lg:text-xl border-b-2 border-blue-500 focus:outline-none bg-transparent"
+                                value={tempTitle}
+                                onChange={(e) => setTempTitle(e.target.value)}
+                                autoFocus
+                                onBlur={() => {
+                                    setData({ ...data, title: tempTitle });
+                                    setIsEditingTitle(false);
+                                }}
+                                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur() }}
+                            />
+                        ) : (
+                            <span
+                                onClick={() => { setTempTitle(data.title || data.refinedGoal); setIsEditingTitle(true); }}
+                                className={cn("font-bold text-slate-900 text-lg lg:text-xl print:text-3xl truncate transition-all max-w-[200px] lg:max-w-md cursor-pointer hover:underline decoration-slate-300 underline-offset-4", isPresentationMode && "text-2xl lg:text-3xl max-w-full")}
+                            >
+                                {data.title || data.refinedGoal}
+                            </span>
+                        )}
+                        {!isEditingTitle && !isPresentationMode && <Edit3 size={14} className="ml-2 text-slate-300" />}
                     </div>
                     <div className="flex items-center space-x-2 lg:space-x-4 print:hidden">
                         {isPresentationMode ? (

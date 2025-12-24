@@ -105,7 +105,32 @@ export default function Home() {
         analyzeProject(finalGoals.map(id => goals.find(g => g.id === id)?.label || id), finalTypes, finalText),
         minDelay
       ]);
-      setAnalysisResult(result);
+
+      // Generate ID and Title Logic
+      const historyJSON = localStorage.getItem("consulting_history") || "[]";
+      const history = JSON.parse(historyJSON);
+      const nextIdNum = history.length + 1;
+      const newId = String(nextIdNum).padStart(3, '0');
+
+      const theme = result.theme || (finalText ? finalText.substring(0, 10) + "..." : "新規プロジェクト");
+      const title = `${newId}-${theme}`;
+
+      const newResult = { ...result, id: newId, title: title, lastUpdated: new Date().toISOString() };
+
+      // Save to History immediately
+      const newHistoryItem = {
+        id: newId,
+        title: title,
+        date: new Date().toLocaleString('ja-JP'),
+        data: newResult
+      };
+
+      const updatedHistory = [newHistoryItem, ...history];
+      localStorage.setItem("consulting_history", JSON.stringify(updatedHistory));
+      setSavedHistories(updatedHistory);
+      setHasHistory(true);
+
+      setAnalysisResult(newResult);
     } catch (error) {
       console.error("Analysis failed", error);
     } finally {
@@ -140,7 +165,26 @@ export default function Home() {
   ];
 
   if (step === 5 && analysisResult) {
-    return <Dashboard analysis={analysisResult} onRestart={() => setStep(0)} />;
+    return <Dashboard
+      analysis={analysisResult}
+      onRestart={() => setStep(0)}
+      onUpdate={(newData) => {
+        setAnalysisResult(newData);
+        // Auto-save logic
+        const historyJSON = localStorage.getItem("consulting_history");
+        if (historyJSON && newData.id) {
+          const history = JSON.parse(historyJSON);
+          const idx = history.findIndex((h: any) => h.id === newData.id);
+          if (idx >= 0) {
+            history[idx].data = newData;
+            if (newData.title) history[idx].title = newData.title;
+            history[idx].date = new Date().toLocaleString('ja-JP');
+            localStorage.setItem("consulting_history", JSON.stringify(history));
+            setSavedHistories(history);
+          }
+        }
+      }}
+    />;
   }
 
   return (

@@ -68,6 +68,9 @@ export interface AnalysisResult {
         overview: string;
         details: string[];
     };
+    id?: string;
+    title?: string;
+    lastUpdated?: string;
     theme?: string;
     aiNote: string;
     tags: string[];
