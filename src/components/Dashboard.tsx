@@ -292,92 +292,138 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
             if ((activeModule === "M10" || activeModule === "M11") && !newData.m10Data) {
                 newData.m10Data = {
-                    growthRate: isPersonal ? "105%" : "125%",
-                    marketSize: isPersonal ? "500億円" : "1.2兆円",
-                    trends: isPersonal ? ["リモートワークの定着", "個のスキルの収益化", "マイクロ法人"] : ["AIによる個別最適化", "EdTechの普及", "リカレント教育の需要増"],
-                    competitors: isPersonal ? [
-                        { name: "既存プラットフォーム", share: 70, strength: "集客力" },
-                        { name: "個人発信者", share: 20, strength: "親近感" }
+
+                    marketAnalysis: [], // Add default if needed
+                    trends: isPersonal ? [
+                        { keyword: "リモートワークの定着", growth: "High", platform: "Zoom/Teams", reasoning: "働き方の変化により需要増" },
+                        { keyword: "個のスキルの収益化", growth: "High", platform: "Coconala/Note", reasoning: "副業解禁の流れ" },
+                        { keyword: "マイクロ法人", growth: "Mid", platform: "Public", reasoning: "税制メリットの注目" }
                     ] : [
-                        { name: "A社 (大手)", share: 45, strength: "ブランド力" },
-                        { name: "B社 (新興)", share: 15, strength: "AI技術" }
+                        { keyword: "AIによる個別最適化", growth: "High", platform: "LMS", reasoning: "学習効果の最大化" },
+                        { keyword: "EdTechの普及", growth: "High", platform: "Mobile", reasoning: "DX推進の影響" },
+                        { keyword: "リカレント教育の需要増", growth: "Mid", platform: "Government", reasoning: "リスキリング政策" }
+                    ],
+                    competitors: isPersonal ? [
+                        { name: "既存プラットフォーム", share: 70, strength: "集客力", weakness: "手数料が高い", strategy: "独自ドメインでの差別化" },
+                        { name: "個人発信者", share: 20, strength: "親近感", weakness: "信頼性の担保", strategy: "実績公開による信頼獲得" }
+                    ] : [
+                        { name: "A社 (大手)", share: 45, strength: "ブランド力", weakness: "スピード感", strategy: "ニッチ機能での差別化" },
+                        { name: "B社 (新興)", share: 15, strength: "AI技術", weakness: "導入実績", strategy: "PoCによる実績作り" }
                     ],
                     evidence: isPersonal ? [
-                        { source: "フリーランス実態調査 2024", url: "https://www.lancers.co.jp/news/pr/21568/" },
-                        { source: "総務省: 労働力調査報告", url: "https://www.stat.go.jp/data/roudou/index.html" }
+                        { title: "フリーランス実態調査 2024", url: "https://www.lancers.co.jp/news/pr/21568/", date: "2024-01" },
+                        { title: "総務省: 労働力調査報告", url: "https://www.stat.go.jp/data/roudou/index.html", date: "2024-02" }
                     ] : [
-                        { source: "IDC Japan: AI市場予測 2024", url: "https://www.idc.com/jp/report/market-forecast" },
-                        { source: "文部科学省: 教育情報化の現状", url: "https://www.mext.go.jp/a_menu/shotou/zyouhou/index.htm" }
+                        { title: "IDC Japan: AI市場予測 2024", url: "https://www.idc.com/jp/report/market-forecast", date: "2024-04" },
+                        { title: "文部科学省: 教育情報化の現状", url: "https://www.mext.go.jp/a_menu/shotou/zyouhou/index.htm", date: "2023-12" }
                     ]
                 };
                 updated = true;
             } else if (activeModule === "M20" && !newData.m20Data) {
                 newData.m20Data = {
-                    targetPersona: isPersonal ? "隙間時間で収入を得たい主婦・会社員" : "30-40代のキャリアアップ志向層",
-                    coreValue: isPersonal ? "誰でも再現可能なスモールステップ" : "短期間で実務レベルのAIスキル習得",
-                    channels: isPersonal ? ["SNS (X/Instagram)", "ココナラ", "ブログ"] : ["LinkedIn", "Tech系メディア", "ウェビナー"],
+                    targetPersona: {
+                        profile: isPersonal ? "隙間時間で収入を得たい主婦・会社員" : "30-40代のキャリアアップ志向層",
+                        painPoints: ["時間がない", "スキルに自信がない"],
+                        gainPoints: ["副収入", "自己実現"]
+                    },
+                    strategy: {
+                        coreValue: isPersonal ? "誰でも再現可能なスモールステップ" : "短期間で実務レベルのAIスキル習得",
+                        channels: isPersonal ? ["SNS (X/Instagram)", "ココナラ", "ブログ"] : ["LinkedIn", "Tech系メディア", "ウェビナー"],
+                        pricing: "Sub"
+                    },
+                    salesFlow: [], // Ensure this property exists
                     actionPlans: [
-                        { task: isPersonal ? "実績作り（モニター募集）" : "オンライン広告の出稿開始", priority: "High" },
-                        { task: "集客導線の設計", priority: "High" }
+                        { task: isPersonal ? "実績作り（モニター募集）" : "オンライン広告の出稿開始", priority: "High", deadline: "1ヶ月以内" },
+                        { task: "集客導線の設計", priority: "High", deadline: "2週間以内" }
                     ]
                 };
                 updated = true;
             } else if ((activeModule === "M30" || activeModule === "M31") && !newData.m30Data) {
                 if (isPersonal) {
                     newData.m30Data = {
-                        fundingNeeds: "初期投資として5万円（機材・ツール代）程度を想定。自宅作業のため、大きな固定費は発生せず、初月から黒字化を目指す構成。",
+                        executiveSummary: isPersonal ? "スモールスタートで確実な収益化を目指す計画" : "",
                         milestones: [
-                            { date: "1ヶ月目", event: "サービス設計・SNS開設", phase: "集客開始" },
-                            { date: "3ヶ月目", event: "初収益達成 (3-5万円)", phase: "検証" },
-                            { date: "6ヶ月目", event: "月収10万円達成", phase: "安定" }
+                            { date: "1ヶ月目", event: "サービス設計・SNS開設", phase: "集客開始", requirement: "アカウント開設" },
+                            { date: "3ヶ月目", event: "初収益達成 (3-5万円)", phase: "検証", requirement: "モニター5名獲得" },
+                            { date: "6ヶ月目", event: "月収10万円達成", phase: "安定", requirement: "自動化ツール導入" }
                         ],
                         plSimulation: [
-                            { year: 1, revenue: 1200000, profit: 1000000 },
-                            { year: 2, revenue: 1800000, profit: 1500000 },
-                            { year: 3, revenue: 2400000, profit: 2000000 },
-                            { year: 4, revenue: 3000000, profit: 2500000 },
-                            { year: 5, revenue: 4000000, profit: 3200000 }
-                        ]
+                            { year: 1, revenue: 1200000, profit: 1000000, note: "基盤構築" },
+                            { year: 2, revenue: 1800000, profit: 1500000, note: "拡大期" },
+                            { year: 3, revenue: 2400000, profit: 2000000, note: "安定期" },
+                            { year: 4, revenue: 3000000, profit: 2500000, note: "多角化" },
+                            { year: 5, revenue: 4000000, profit: 3200000, note: "法人化検討" }
+                        ],
+                        fundingPlan: [],
+                        teamProfile: [],
+                        riskAnalysis: []
                     };
                 } else {
                     newData.m30Data = {
-                        fundingNeeds: "初期開発費として2000万円、運転資金として1000万円が必要。初年度は赤字想定だが、2年目以降の急成長で回収予定。",
+                        executiveSummary: isPersonal ? "" : "急成長を見据えたスケーラブルな事業計画",
                         milestones: [
-                            { date: "2025-04", event: "プロトタイプ完成", phase: "Seed" },
-                            { date: "2025-10", event: "β版リリース", phase: "Early" },
-                            { date: "2026-04", event: "正式サービス開始", phase: "Growth" }
+                            { date: "2025-04", event: "プロトタイプ完成", phase: "Seed", requirement: "エンジニア採用" },
+                            { date: "2025-10", event: "β版リリース", phase: "Early", requirement: "テストユーザー100名" },
+                            { date: "2026-04", event: "正式サービス開始", phase: "Growth", requirement: "広告費投下" }
                         ],
                         plSimulation: [
-                            { year: 1, revenue: 30000000, profit: -10000000 },
-                            { year: 2, revenue: 80000000, profit: 5000000 },
-                            { year: 3, revenue: 200000000, profit: 50000000 },
-                            { year: 4, revenue: 450000000, profit: 120000000 },
-                            { year: 5, revenue: 800000000, profit: 250000000 }
-                        ]
+                            { year: 1, revenue: 0, profit: -30000000, note: "開発投資" },
+                            { year: 2, revenue: 50000000, profit: -10000000, note: "先行投資" },
+                            { year: 3, revenue: 200000000, profit: 50000000, note: "黒字化" },
+                            { year: 4, revenue: 500000000, profit: 200000000, note: "急成長" },
+                            { year: 5, revenue: 1000000000, profit: 500000000, note: "IPO準備" }
+                        ],
+                        fundingPlan: [],
+                        teamProfile: [],
+                        riskAnalysis: []
                     };
                 }
+
                 updated = true;
             } else if ((activeModule === "M60" || activeModule === "M61") && !newData.m60Data) {
                 newData.m60Data = {
                     concept: isStartup ? "業界初のAIマッチングアプリ" : "既存客向け高効率支援システム",
-                    features: ["AIマッチングエンジン", "リアルタイム通知", "ダッシュボード", "決済連携", "履歴管理"],
-                    techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase", "Gemini API"]
+                    features: [
+                        { name: "AIマッチングエンジン", priority: "High", description: "適合率90%以上の自動マッチング" },
+                        { name: "リアルタイム通知", priority: "Mid", description: "Websocketを用いた即時通知機能" }
+                    ],
+                    techStack: [
+                        { category: "Frontend", selection: "Next.js", reason: "SSRによる高速表示とSEO" },
+                        { category: "Backend", selection: "Supabase", reason: "開発工数の短縮" }
+                    ],
+                    userFlow: [
+                        { action: "LP着地", response: "3秒以内にFVで価値訴求" },
+                        { action: "登録完了", response: "オンボーディングステップの自動開始" }
+                    ]
                 };
                 updated = true;
             } else if (activeModule === "M40" && !newData.m40Data) {
                 newData.m40Data = {
-                    currentFlow: ["現状1", "現状2"],
-                    bottlenecks: ["手作業によるタイムロス", "情報共有の遅れ"],
-                    improvementPlan: ["自動化ツールの導入", "チャットボット活用"]
+                    currentBottlenecks: ["手作業によるタイムロス", "情報共有の遅れ"],
+                    improvementFlow: [
+                        { before: "手動での転記作業", after: "API連携による完全自動化", tool: "Zapier/Make" },
+                        { before: "属人的な対応判断", after: "AIによる一次回答の自動生成", tool: "OpenAI API" }
+                    ],
+                    costReduction: "月間約80時間の工数削減（年間480万円相当）"
                 };
                 updated = true;
             } else if (activeModule === "M50" && !newData.m50Data) {
                 newData.m50Data = {
-                    themes: ["AIトレンド解説", "活用事例紹介"],
-                    schedule: ["週3回"],
-                    kpis: [
-                        { metric: "フォロワー数", target: "1000人" },
-                        { metric: "エンゲージメント率", target: "5%" }
+                    contentThemes: ["AIトレンド解説", "活用事例紹介", "業務効率化TIPS"],
+                    snsStrategy: [
+                        {
+                            platform: "X (Twitter)",
+                            frequency: "週3回",
+                            kpis: [
+                                { metric: "フォロワー数", target: "1000人" },
+                                { metric: "エンゲージメント率", target: "5%" }
+                            ]
+                        }
+                    ],
+                    headlines: ["AI時代の必須スキル", "残業ゼロの働き方"],
+                    funnelDesign: [
+                        { stage: "認知", action: "図解ポストの投稿", prompt: "図解作成プロンプト" },
+                        { stage: "興味", action: "無料Noteへの誘導", prompt: "Note記事構成プロンプト" }
                     ]
                 };
                 updated = true;
@@ -432,9 +478,9 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         { name: "保守ケース (Worst)", result: "利益率 5%確保", probability: "20%" }
                     ],
                     parameters: [
-                        { name: "顧客獲得単価 (CPA)", value: "15,000円" },
-                        { name: "LTV (ライフタイムバリュー)", value: "120,000円" },
-                        { name: "月間成約数", value: "30件" }
+                        { name: "顧客獲得単価 (CPA)", value: "15,000円", impact: "High" },
+                        { name: "LTV (ライフタイムバリュー)", value: "120,000円", impact: "High" },
+                        { name: "月間成約数", value: "30件", impact: "Mid" }
                     ]
                 };
                 updated = true;
@@ -533,34 +579,32 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
         if (data.m10Data) {
             content += `\n## M10: Market Analysis\n`;
-            content += `Growth Rate: ${data.m10Data.growthRate}\n`;
-            content += `Market Size: ${data.m10Data.marketSize}\n`;
-            content += `Trends: ${data.m10Data.trends.join(', ')}\n`;
+            content += `Trends:\n${data.m10Data.trends.map(t => `- ${t.keyword} (${t.growth}): ${t.reasoning}`).join('\n')}\n`;
         }
 
         if (data.m20Data) {
             content += `\n## M20: Sales Strategy\n`;
-            content += `Target: ${data.m20Data.targetPersona}\n`;
-            content += `Core Value: ${data.m20Data.coreValue}\n`;
-            content += `Channels: ${data.m20Data.channels.join(', ')}\n`;
+            content += `Target: ${data.m20Data.targetPersona.profile}\n`;
+            content += `Core Value: ${data.m20Data.strategy.coreValue}\n`;
+            content += `Channels: ${data.m20Data.strategy.channels.join(', ')}\n`;
         }
 
         if (data.m30Data) {
             content += `\n## M30: Business & Financing\n`;
-            content += `Funding Needs: ${data.m30Data.fundingNeeds}\n`;
+            if (data.m30Data.executiveSummary) content += `Summary: ${data.m30Data.executiveSummary}\n`;
             content += `Milestones:\n${data.m30Data.milestones.map(m => `- ${m.date}: ${m.event} (${m.phase})`).join('\n')}\n`;
         }
 
         if (data.m40Data) {
             content += `\n## M40: Operations\n`;
-            content += `Bottlenecks:\n${data.m40Data.bottlenecks.map(b => `- ${b}`).join('\n')}\n`;
-            content += `Improvement Plan:\n${data.m40Data.improvementPlan.map((p, i) => `- ${i + 1}. ${p}`).join('\n')}\n`;
+            content += `Bottlenecks:\n${data.m40Data.currentBottlenecks.map(b => `- ${b}`).join('\n')}\n`;
+            content += `Improvement Flow:\n${data.m40Data.improvementFlow.map(f => `- ${f.before} -> ${f.after} [${f.tool}]`).join('\n')}\n`;
         }
 
         if (data.m50Data) {
             content += `\n## M50: SNS & Content\n`;
-            content += `Themes: ${data.m50Data.themes.join(', ')}\n`;
-            content += `KPIs:\n${data.m50Data.kpis.map(k => `- ${k.metric}: ${k.target}`).join('\n')}\n`;
+            content += `Themes: ${data.m50Data.contentThemes.join(', ')}\n`;
+            content += `Strategy:\n${data.m50Data.snsStrategy.map(s => `- ${s.platform}: ${s.frequency}`).join('\n')}\n`;
         }
 
 
@@ -2824,11 +2868,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                 )}
                 {/* Generating Feedback Overlay */}
                 {isGenerating && <GeneratingOverlay />}
-        </div>
-        </main >
-    </div >
+            </main >
+        </div >
     );
 };
 
-export default Dashboard;
+
 
