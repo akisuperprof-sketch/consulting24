@@ -58,6 +58,11 @@ export interface AnalysisResult {
         features: string[];
         techStack: string[];
     };
+    // Detailed data for M91 Simulation
+    m91Data?: {
+        scenarios: { name: string; result: string; probability: string }[];
+        parameters: { name: string; value: string }[];
+    };
     // Detailed data for M99 Custom
     m99Data?: {
         overview: string;

@@ -187,6 +187,20 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                     ]
                 };
                 updated = true;
+            } else if (activeModule === "M91" && !newData.m91Data) {
+                newData.m91Data = {
+                    scenarios: [
+                        { name: "楽観ケース (Best)", result: "利益率 25%達成", probability: "20%" },
+                        { name: "基本ケース (Base)", result: "利益率 15%達成", probability: "60%" },
+                        { name: "保守ケース (Worst)", result: "利益率 5%確保", probability: "20%" }
+                    ],
+                    parameters: [
+                        { name: "顧客獲得単価 (CPA)", value: "15,000円" },
+                        { name: "LTV (ライフタイムバリュー)", value: "120,000円" },
+                        { name: "月間成約数", value: "30件" }
+                    ]
+                };
+                updated = true;
             } else if (activeModule === "M99" && !newData.m99Data) {
                 newData.m99Data = {
                     overview: "カスタムモジュールの分析結果",
@@ -1341,28 +1355,132 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         </div>
                                     )}
 
-                                    {/* M99 Custom Module View */}
-                                    {activeModule === "M99" && data.m99Data && (
-                                        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
-                                            <div className="flex items-center space-x-4 mb-8">
-                                                <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center">
-                                                    <LightbulbIcon size={24} />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold text-lg text-slate-900">{data.m99Data.overview}</h3>
-                                                    <p className="text-sm text-slate-400">Custom Analysis Result</p>
+                                    {/* M91 Simulation View */}
+                                    {activeModule === "M91" && !data.m91Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-70">
+                                            <Calculator size={64} className="text-slate-300 mb-4" />
+                                            <h3 className="text-xl font-bold text-slate-700 mb-2">シミュレーション データなし</h3>
+                                            <p className="text-slate-400 mb-6">「詳細データを生成」で試算を実行してください</p>
+                                            <button onClick={handleGenerateDetail} className="px-6 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 font-bold text-sm">
+                                                試算を実行
+                                            </button>
+                                        </div>
+                                    )}
+                                    {activeModule === "M91" && data.m91Data && (
+                                        <div className="space-y-8">
+                                            <div className="flex items-center space-x-3 text-slate-500 mb-4">
+                                                <Calculator size={20} />
+                                                <span className="font-bold text-sm uppercase">Business Simulation Engine</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                                {data.m91Data.scenarios.map((s, i) => (
+                                                    <div key={i} className={`p-6 rounded-3xl border text-center transition-all hover:shadow-lg ${i === 1 ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-100' : 'bg-white border-slate-100 opacity-80 hover:opacity-100'}`}>
+                                                        <h4 className="font-bold text-slate-600 mb-3 text-sm">{s.name}</h4>
+                                                        <p className="text-2xl font-black text-slate-800 mb-2">{s.result}</p>
+                                                        <span className="inline-block text-[10px] font-bold px-3 py-1 bg-white border border-slate-200 rounded-full text-slate-400">
+                                                            Prob: {s.probability}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
+                                                <h4 className="font-bold mb-6 text-slate-700">Assumptions & Parameters</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
+                                                    {data.m91Data.parameters.map((p, i) => (
+                                                        <div key={i} className="flex justify-between items-center py-3 border-b border-slate-200/50">
+                                                            <span className="text-sm font-medium text-slate-500">{p.name}</span>
+                                                            <div className="flex items-center">
+                                                                {isEditing ? (
+                                                                    <input className="text-right font-mono font-bold text-slate-800 bg-white border border-slate-200 px-2 rounded w-32" defaultValue={p.value} />
+                                                                ) : (
+                                                                    <span className="font-mono font-bold text-slate-800">{p.value}</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <ul className="space-y-4">
+                                        </div>
+                                    )}
+
+                                    {/* M99 Empty State (Before Generation) */}
+                                    {activeModule === "M99" && !data.m99Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center animate-in fade-in zoom-in duration-500">
+                                            <div className="w-24 h-24 bg-blue-50 text-blue-500 rounded-[2rem] flex items-center justify-center mb-6 shadow-sm">
+                                                <LightbulbIcon size={48} strokeWidth={1.5} />
+                                            </div>
+                                            <h3 className="text-2xl font-bold text-slate-800 mb-3">カスタム分析の準備完了</h3>
+                                            <p className="text-slate-500 mb-8 max-w-md leading-relaxed">
+                                                標準項目ではカバーできない独自の分析を行います。<br />
+                                                右上の<span className="font-bold text-blue-600">「詳細データを生成」</span>ボタンを押して、<br />
+                                                AIによる特別リサーチを開始してください。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-4 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" fill="currentColor" />
+                                                今すぐ生成する
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* M99 Custom Module View */}
+                                    {activeModule === "M99" && data.m99Data && (
+                                        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                                            <div className="mb-10 border-b border-slate-100 pb-8">
+                                                <div className="flex items-center space-x-4 mb-4">
+                                                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                                        <Edit3 size={24} />
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-xl text-slate-900">カスタム分析ワークスペース</h3>
+                                                        <p className="text-sm text-slate-500">標準項目外の独自の課題を定義し、AIと共に解決策を練り上げます。</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Theme Input */}
+                                            <div className="mb-8">
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Analysis Theme (分析テーマ)</label>
+                                                <input
+                                                    className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-lg text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300"
+                                                    placeholder="例：競合他社の採用戦略、特定地域の法規制リスクなど"
+                                                    defaultValue={data.m99Data.overview !== "カスタムモジュールの分析結果" ? data.m99Data.overview : ""}
+                                                />
+                                            </div>
+
+                                            {/* Editable List */}
+                                            <div className="space-y-6">
+                                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest">Key Findings & Action Plan</label>
                                                 {data.m99Data.details.map((d, i) => (
-                                                    <li key={i} className="flex items-start p-4 bg-slate-50 rounded-xl border border-slate-100">
-                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs mr-3 flex-shrink-0">
+                                                    <div key={i} className="flex items-start group">
+                                                        <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-focus-within:bg-indigo-600 group-focus-within:text-white flex items-center justify-center mr-4 flex-shrink-0 font-bold transition-colors mt-4">
                                                             {i + 1}
                                                         </div>
-                                                        <span className="text-slate-700 font-medium">{d}</span>
-                                                    </li>
+                                                        <textarea
+                                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 min-h-[120px] focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all leading-relaxed"
+                                                            defaultValue={d.includes("ユーザー定義") ? "" : d}
+                                                            placeholder={`考察・分析結果・アクションプラン ${i + 1}`}
+                                                        />
+                                                    </div>
                                                 ))}
-                                            </ul>
+                                            </div>
+
+                                            <div className="mt-10 p-6 bg-indigo-50/50 rounded-3xl border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                                                <div className="text-sm text-indigo-800 font-medium">
+                                                    <span className="block font-bold mb-1 from-indigo-600">AI活用ヒント:</span>
+                                                    「このテーマについて、リスクと対策を3つ挙げて」とチャットで指示してください。<br />
+                                                    得られた回答をここにコピー＆ペーストして保存できます。
+                                                </div>
+                                                <button
+                                                    onClick={() => setIsChatOpen(true)}
+                                                    className="flex-shrink-0 flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-105 transition-all whitespace-nowrap"
+                                                >
+                                                    <MessageSquare className="mr-2" size={18} />
+                                                    AIに相談・壁打ちする
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
 
