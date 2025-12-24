@@ -10,7 +10,6 @@ import {
     Layers,
     LayoutDashboard,
     MessageSquare,
-    RotateCcw,
     Plus,
     Save,
     Settings,
@@ -30,7 +29,7 @@ import {
     Cpu,
     Smartphone,
     Calculator,
-    Library,
+    Library, RotateCcw,
     Printer,
     FileDown,
     X,
@@ -1342,15 +1341,22 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
 
 
-
+                                    {/* Quick Actions */}
+                                    <div
+                                        onClick={handleAddCustomModule}
+                                        className="p-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center text-center space-y-4 group hover:border-blue-400 transition-colors cursor-pointer active:scale-95"
+                                    >
+                                        <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
+                                            <Plus />
+                                        </div>
+                                        <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">カスタムモジュール追加 (Add Custom Module)</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </main>
         </div>
-                    </main >
-                </div >
-        </div >
     );
 }
