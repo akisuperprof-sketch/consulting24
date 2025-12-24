@@ -37,6 +37,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showDevTools, setShowDevTools] = useState(false);
+  const [hasHistory, setHasHistory] = useState(false);
 
   // Persistence
   useEffect(() => {
@@ -48,6 +49,17 @@ export default function Home() {
         setClientTypes(data.clientTypes || []);
         setFreeText(data.freeText || "");
       } catch (e) { console.error(e); }
+    }
+
+    // Check history for Resume button
+    const history = localStorage.getItem("consulting_history");
+    if (history) {
+      try {
+        const parsed = JSON.parse(history);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setHasHistory(true);
+        }
+      } catch (e) { }
     }
   }, []);
 
@@ -222,7 +234,9 @@ export default function Home() {
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
                 </button>
                 <button
+                  disabled={!hasHistory}
                   onClick={() => {
+                    if (!hasHistory) return;
                     const saved = localStorage.getItem("consulting_history");
                     if (saved) {
                       try {
@@ -230,15 +244,16 @@ export default function Home() {
                         if (reports.length > 0) {
                           setAnalysisResult(reports[0].data);
                           setStep(5);
-                        } else {
-                          alert("保存された履歴が見つかりません");
                         }
-                      } catch (e) { alert("履歴データの読み込みに失敗しました"); }
-                    } else {
-                      alert("保存された履歴が見つかりません");
+                      } catch (e) { console.error(e); }
                     }
                   }}
-                  className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-slate-600 transition-all duration-200 bg-white border-2 border-slate-100 rounded-xl focus:outline-none hover:bg-slate-50 hover:border-slate-200 hover:text-slate-900 w-full md:w-auto"
+                  className={cn(
+                    "group relative inline-flex items-center justify-center px-8 py-4 font-bold transition-all duration-200 border-2 rounded-xl focus:outline-none w-full md:w-auto",
+                    hasHistory
+                      ? "text-slate-600 bg-white border-slate-100 hover:bg-slate-50 hover:border-slate-200 hover:text-slate-900"
+                      : "text-slate-300 bg-slate-50 border-slate-50 cursor-not-allowed"
+                  )}
                 >
                   履歴から再開
                 </button>

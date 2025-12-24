@@ -188,8 +188,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
             if (updated) {
                 setData(newData);
-            } else {
-                alert("データは既にあるか、対象外のモジュールです");
+                console.log("Data already exists or module not supported");
             }
             setIsGenerating(false);
         }, 1500); // 1.5s delay for effect
