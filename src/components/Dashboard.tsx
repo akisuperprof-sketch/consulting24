@@ -1402,7 +1402,12 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <div className="w-12 h-12 bg-slate-50 text-slate-300 rounded-2xl flex items-center justify-center group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors">
                                             <Plus />
                                         </div>
-                                        <div className="text-[10px] font-black text-slate-300 group-hover:text-blue-500 uppercase tracking-widest">カスタムモジュール追加 (Add Custom Module)</div>
+                                        <div className="text-xs font-bold text-slate-400 group-hover:text-blue-600 transition-colors">
+                                            カスタムモジュールを追加（標準以外の分析が必要な場合）
+                                        </div>
+                                        <div className="text-[10px] text-slate-300 group-hover:text-blue-400">
+                                            例：「特定の法規制調査」「社内稟議向けの対策」「ニッチ市場の深掘り」など
+                                        </div>
                                     </div>
                                 </div>
                             </div>
