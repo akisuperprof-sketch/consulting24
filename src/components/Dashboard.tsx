@@ -39,8 +39,10 @@ import {
     Maximize,
     Activity,
     Loader2,
-    ArrowUpRight
+    ArrowUpRight,
+    HelpCircle
 } from "lucide-react";
+
 import { useState, useEffect } from "react";
 import { AnalysisResult, chatWithAI } from "@/app/actions";
 
@@ -63,6 +65,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isPresentationMode, setIsPresentationMode] = useState(false);
+    const [showHelp, setShowHelp] = useState(true);
 
     // Data State (for editing)
     const [data, setData] = useState<AnalysisResult>(analysis);
@@ -582,6 +585,13 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                             </button>
                         ) : (
                             <>
+                                <button
+                                    onClick={() => setShowHelp(true)}
+                                    className="p-2 text-slate-400 hover:text-indigo-600 transition-colors mr-1"
+                                    title="使い方ガイド"
+                                >
+                                    <HelpCircle size={20} />
+                                </button>
                                 <button
                                     onClick={() => setIsPresentationMode(true)}
                                     className="p-2 text-slate-400 hover:text-indigo-600 transition-colors"
@@ -1258,8 +1268,8 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         <button
                                             onClick={() => setIsChatOpen(!isChatOpen)}
                                             className={`shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group z-[60] ${isChatOpen
-                                                    ? "w-14 h-14 bg-slate-800 text-white rounded-full"
-                                                    : "px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-full space-x-3"
+                                                ? "w-14 h-14 bg-slate-800 text-white rounded-full"
+                                                : "px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-full space-x-3"
                                                 }`}
                                         >
                                             {isChatOpen ? (
@@ -1399,6 +1409,70 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                         </div>
                     </div>
                 </div>
+                {/* Help Modal */}
+                {showHelp && (
+                    <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden"
+                        >
+                            <div className="p-8">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h2 className="text-2xl font-bold text-slate-900 flex items-center">
+                                        <HelpCircle className="mr-3 text-blue-600" />
+                                        使い方のクイックガイド
+                                    </h2>
+                                    <button onClick={() => setShowHelp(false)} className="p-2 hover:bg-slate-100 rounded-full">
+                                        <X size={24} />
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="flex gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0">1</div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800">視点を選ぶ</h3>
+                                                <p className="text-sm text-slate-500">左側のメニューから、分析したいテーマ（市場、戦略など）を選びます。</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0">2</div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800">詳細を生成</h3>
+                                                <p className="text-sm text-slate-500">概要を見てさらに深掘りしたい場合、右上の「詳細データを生成」をクリック。</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold flex-shrink-0">3</div>
+                                            <div>
+                                                <h3 className="font-bold text-slate-800">自由に編集</h3>
+                                                <p className="text-sm text-slate-500">記述内容はすべて編集可能。「編集モード」または直接クリックで修正できます。</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                        <h4 className="font-bold text-slate-600 mb-4 flex items-center"><Zap size={16} className="mr-2" /> Pro Tips</h4>
+                                        <ul className="space-y-3 text-sm text-slate-600">
+                                            <li className="flex items-start"><CheckCircle2 size={16} className="mr-2 text-green-500 mt-0.5" /> <span>右下のチャットボタンで、AIにいつでも相談や壁打ちができます。</span></li>
+                                            <li className="flex items-start"><CheckCircle2 size={16} className="mr-2 text-green-500 mt-0.5" /> <span>左下「モジュールを追加」で、オリジナルの分析視点を追加できます。<span className="text-xs bg-slate-200 px-1 rounded ml-1">New</span></span></li>
+                                            <li className="flex items-start"><CheckCircle2 size={16} className="mr-2 text-green-500 mt-0.5" /> <span>右上の「出力を生成」からPDF保存が可能。</span></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                                <button
+                                    onClick={() => setShowHelp(false)}
+                                    className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
+                                >
+                                    始める
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
             </main>
         </div>
     );
