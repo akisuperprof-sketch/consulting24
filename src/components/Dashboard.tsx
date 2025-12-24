@@ -184,6 +184,16 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                     ]
                 };
                 updated = true;
+            } else if (activeModule === "M99" && !newData.m99Data) {
+                newData.m99Data = {
+                    overview: "カスタムモジュールの分析結果",
+                    details: [
+                        "ユーザー定義の要件に基づく詳細分析",
+                        "課題解決のためのステップ案",
+                        "必要なリソースの定義"
+                    ]
+                };
+                updated = true;
             }
 
             if (updated) {
@@ -1247,16 +1257,25 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
 
                                         <button
                                             onClick={() => setIsChatOpen(!isChatOpen)}
-                                            className="w-14 h-14 bg-slate-900 hover:bg-black text-white rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group"
+                                            className={`shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative group z-[60] ${isChatOpen
+                                                    ? "w-14 h-14 bg-slate-800 text-white rounded-full"
+                                                    : "px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-full space-x-3"
+                                                }`}
                                         >
-                                            {isChatOpen ? <X size={24} /> : <MessageSquare size={24} />}
-                                            {!isChatOpen && (
-                                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white" />
+                                            {isChatOpen ? (
+                                                <X size={24} />
+                                            ) : (
+                                                <>
+                                                    <div className="relative">
+                                                        <MessageSquare size={24} />
+                                                        <span className="absolute -top-1 -right-1 w-3 h-3 bg-rose-500 rounded-full border-2 border-slate-900 animate-pulse" />
+                                                    </div>
+                                                    <div className="flex flex-col items-start">
+                                                        <span className="text-[10px] font-medium text-slate-400 leading-none mb-1">迷ったらここ！</span>
+                                                        <span className="text-sm font-bold">AIに相談 / 次のアクション</span>
+                                                    </div>
+                                                </>
                                             )}
-                                            {/* Tooltip */}
-                                            <span className="absolute right-full mr-4 bg-slate-800 text-white text-xs font-bold px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                                AI Advisor
-                                            </span>
                                         </button>
                                     </div>
 
@@ -1312,8 +1331,33 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                         </div>
                                     )}
 
-                                    {/* Generic Fallback for others (M91 only now) */}
-                                    {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92"].includes(activeModule) && (
+                                    {/* M99 Custom Module View */}
+                                    {activeModule === "M99" && data.m99Data && (
+                                        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                                            <div className="flex items-center space-x-4 mb-8">
+                                                <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center">
+                                                    <LightbulbIcon size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold text-lg text-slate-900">{data.m99Data.overview}</h3>
+                                                    <p className="text-sm text-slate-400">Custom Analysis Result</p>
+                                                </div>
+                                            </div>
+                                            <ul className="space-y-4">
+                                                {data.m99Data.details.map((d, i) => (
+                                                    <li key={i} className="flex items-start p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs mr-3 flex-shrink-0">
+                                                            {i + 1}
+                                                        </div>
+                                                        <span className="text-slate-700 font-medium">{d}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+
+                                    {/* Generic Fallback for others */}
+                                    {!["M00", "M10", "M11", "M20", "M30", "M31", "M40", "M50", "M60", "M61", "M92", "M99"].includes(activeModule) && (
                                         <div className="flex flex-col items-center justify-center min-h-[500px] space-y-6 opacity-80">
                                             <div className="w-20 h-20 bg-blue-50 text-blue-400 rounded-full flex items-center justify-center animate-pulse">
                                                 {activeModule === "M40" && <Cpu size={32} />}

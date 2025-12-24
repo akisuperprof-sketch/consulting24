@@ -58,6 +58,11 @@ export interface AnalysisResult {
         features: string[];
         techStack: string[];
     };
+    // Detailed data for M99 Custom
+    m99Data?: {
+        overview: string;
+        details: string[];
+    };
     aiNote: string;
     tags: string[];
 }

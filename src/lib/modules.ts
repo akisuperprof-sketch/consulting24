@@ -1,7 +1,7 @@
 export type ModuleId =
     | "M00" | "M10" | "M11" | "M12" | "M20"
     | "M30" | "M31" | "M40" | "M50" | "M60"
-    | "M61" | "M90" | "M91" | "M92";
+    | "M61" | "M90" | "M91" | "M92" | "M99";
 
 export interface ModuleDefinition {
     id: ModuleId;
@@ -25,4 +25,5 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     M90: { id: "M90", name: "出力オーケストレーター", description: "PDF/Word/MD生成", category: "utility" },
     M91: { id: "M91", name: "シミュレーション生成", description: "計算式入りSpreadsheet生成", category: "utility" },
     M92: { id: "M92", name: "履歴管理", description: "保存/再編集", category: "utility" },
+    M99: { id: "M99", name: "カスタムモジュール", description: "ユーザー定義の汎用モジュール", category: "utility" },
 };
