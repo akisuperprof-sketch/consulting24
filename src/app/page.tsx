@@ -619,6 +619,11 @@ export default function Home() {
                   {savedHistories.map((h: any, i: number) => (
                     <button key={i} onClick={() => { setAnalysisResult(h.data); setStep(5); setShowResumeModal(false); }} className="w-full text-left p-4 hover:bg-blue-50 rounded-xl transition-colors group flex items-center justify-between border border-transparent hover:border-blue-100">
                       <div>
+                        {h.id && (
+                          <div className="inline-flex items-center px-2 py-0.5 rounded bg-slate-100 text-slate-500 text-[10px] font-black font-mono mb-1">
+                            ID: {h.id}
+                          </div>
+                        )}
                         <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-blue-700 line-clamp-1">{h.title || "Untitled Project"}</div>
                         <div className="text-[10px] text-slate-400 flex items-center font-mono">
                           <Clock size={10} className="mr-1" /> {h.date}

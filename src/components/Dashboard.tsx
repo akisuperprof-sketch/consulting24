@@ -256,46 +256,74 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
         setTimeout(() => {
             const newData = { ...data };
             let updated = false;
+            const isStartup = data.theme?.includes("創業") || data.theme?.includes("スタートアップ") || data.refinedGoal.includes("スタートアップ") || data.tags.includes("急成長");
+            const isPersonal = data.theme?.includes("個人") || data.theme?.includes("副業") || data.theme?.includes("自宅") || data.refinedGoal.includes("個人") || data.refinedGoal.includes("副業") || data.refinedGoal.includes("自宅");
 
             if ((activeModule === "M10" || activeModule === "M11") && !newData.m10Data) {
                 newData.m10Data = {
-                    growthRate: "125%",
-                    marketSize: "1.2兆円",
-                    trends: ["AIによる個別最適化", "EdTechの普及", "リカレント教育の需要増"],
-                    competitors: [
+                    growthRate: isPersonal ? "105%" : "125%",
+                    marketSize: isPersonal ? "500億円" : "1.2兆円",
+                    trends: isPersonal ? ["リモートワークの定着", "個のスキルの収益化", "マイクロ法人"] : ["AIによる個別最適化", "EdTechの普及", "リカレント教育の需要増"],
+                    competitors: isPersonal ? [
+                        { name: "既存プラットフォーム", share: 70, strength: "集客力" },
+                        { name: "個人発信者", share: 20, strength: "親近感" }
+                    ] : [
                         { name: "A社 (大手)", share: 45, strength: "ブランド力" },
-                        { name: "B社 (新興)", share: 15, strength: "AI技術" },
-                        { name: "C社", share: 8, strength: "価格" },
+                        { name: "B社 (新興)", share: 15, strength: "AI技術" }
                     ]
                 };
                 updated = true;
             } else if (activeModule === "M20" && !newData.m20Data) {
                 newData.m20Data = {
-                    targetPersona: "30-40代のキャリアアップ志向層",
-                    coreValue: "短期間で実務レベルのAIスキル習得",
-                    channels: ["LinkedIn", "Tech系メディア", "ウェビナー"],
+                    targetPersona: isPersonal ? "隙間時間で収入を得たい主婦・会社員" : "30-40代のキャリアアップ志向層",
+                    coreValue: isPersonal ? "誰でも再現可能なスモールステップ" : "短期間で実務レベルのAIスキル習得",
+                    channels: isPersonal ? ["SNS (X/Instagram)", "ココナラ", "ブログ"] : ["LinkedIn", "Tech系メディア", "ウェビナー"],
                     actionPlans: [
-                        { task: "オンライン広告の出稿開始", priority: "High" },
-                        { task: "無料ウェビナーの開催", priority: "High" },
-                        { task: "パートナーシップの締結", priority: "Mid" }
+                        { task: isPersonal ? "実績作り（モニター募集）" : "オンライン広告の出稿開始", priority: "High" },
+                        { task: "集客導線の設計", priority: "High" }
                     ]
                 };
                 updated = true;
-            } else if (activeModule === "M30" && !newData.m30Data) {
-                newData.m30Data = {
-                    fundingNeeds: "初期開発費として2000万円、運転資金として1000万円が必要。初年度は赤字想定だが、2年目以降の急成長で回収予定。",
-                    milestones: [
-                        { date: "2025-04", event: "プロトタイプ完成", phase: "Seed" },
-                        { date: "2025-10", event: "β版リリース", phase: "Early" },
-                        { date: "2026-04", event: "正式サービス開始", phase: "Growth" }
-                    ],
-                    plSimulation: [
-                        { year: 1, revenue: 3000, profit: -1000 },
-                        { year: 2, revenue: 8000, profit: 500 },
-                        { year: 3, revenue: 20000, profit: 5000 },
-                        { year: 4, revenue: 45000, profit: 12000 },
-                        { year: 5, revenue: 80000, profit: 25000 }
-                    ]
+            } else if ((activeModule === "M30" || activeModule === "M31") && !newData.m30Data) {
+                if (isPersonal) {
+                    newData.m30Data = {
+                        fundingNeeds: "初期投資として5万円（機材・ツール代）程度を想定。自宅作業のため、大きな固定費は発生せず、初月から黒字化を目指す構成。",
+                        milestones: [
+                            { date: "1ヶ月目", event: "サービス設計・SNS開設", phase: "集客開始" },
+                            { date: "3ヶ月目", event: "初収益達成 (3-5万円)", phase: "検証" },
+                            { date: "6ヶ月目", event: "月収10万円達成", phase: "安定" }
+                        ],
+                        plSimulation: [
+                            { year: 1, revenue: 1200000, profit: 1000000 },
+                            { year: 2, revenue: 1800000, profit: 1500000 },
+                            { year: 3, revenue: 2400000, profit: 2000000 },
+                            { year: 4, revenue: 3000000, profit: 2500000 },
+                            { year: 5, revenue: 4000000, profit: 3200000 }
+                        ]
+                    };
+                } else {
+                    newData.m30Data = {
+                        fundingNeeds: "初期開発費として2000万円、運転資金として1000万円が必要。初年度は赤字想定だが、2年目以降の急成長で回収予定。",
+                        milestones: [
+                            { date: "2025-04", event: "プロトタイプ完成", phase: "Seed" },
+                            { date: "2025-10", event: "β版リリース", phase: "Early" },
+                            { date: "2026-04", event: "正式サービス開始", phase: "Growth" }
+                        ],
+                        plSimulation: [
+                            { year: 1, revenue: 30000000, profit: -10000000 },
+                            { year: 2, revenue: 80000000, profit: 5000000 },
+                            { year: 3, revenue: 200000000, profit: 50000000 },
+                            { year: 4, revenue: 450000000, profit: 120000000 },
+                            { year: 5, revenue: 800000000, profit: 250000000 }
+                        ]
+                    };
+                }
+                updated = true;
+            } else if ((activeModule === "M60" || activeModule === "M61") && !newData.m60Data) {
+                newData.m60Data = {
+                    concept: isStartup ? "業界初のAIマッチングアプリ" : "既存客向け高効率支援システム",
+                    features: ["AIマッチングエンジン", "リアルタイム通知", "ダッシュボード", "決済連携", "履歴管理"],
+                    techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Supabase", "Gemini API"]
                 };
                 updated = true;
             } else if (activeModule === "M40" && !newData.m40Data) {
@@ -400,6 +428,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
             if (updated) {
                 setData(newData);
+            } else {
                 console.log("Data already exists or module not supported");
             }
             setIsGenerating(false);
@@ -590,11 +619,11 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
     const [revenueMultiplier, setRevenueMultiplier] = useState(1.0);
     const [costMultiplier, setCostMultiplier] = useState(1.0);
 
-    const simulatedPL = data.m30Data?.plSimulation.map(item => ({
+    const simulatedPL = data.m30Data?.plSimulation?.map(item => ({
         ...item,
         revenue: Math.round(item.revenue * revenueMultiplier),
         profit: Math.round(item.revenue * revenueMultiplier * 0.4 * (2 - costMultiplier)) // Simplified logic: Profit follows revenue but impacted by cost
-    }));
+    })) || null;
 
     const updateM40 = (field: 'bottlenecks' | 'improvementPlan', index: number, value: string) => {
         if (!data.m40Data) return;
@@ -660,12 +689,31 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                             )}
                             {data.selectedModules.map((m) => {
                                 const isM00 = m.id === "M00";
+                                const module_has_data = (() => {
+                                    switch (m.id) {
+                                        case "M00": return !!data.m00Data;
+                                        case "M10": case "M11": return !!data.m10Data;
+                                        case "M12": return !!data.m12Data;
+                                        case "M20": return !!data.m20Data;
+                                        case "M21": return !!data.m21Data;
+                                        case "M30": case "M31": return !!data.m30Data;
+                                        case "M40": return !!data.m40Data;
+                                        case "M50": return !!data.m50Data;
+                                        case "M51": return !!data.m51Data;
+                                        case "M52": return !!data.m52Data;
+                                        case "M60": case "M61": return !!data.m60Data;
+                                        case "M91": return !!data.m91Data;
+                                        case "M99": return !!data.m99Data;
+                                        default: return false;
+                                    }
+                                })();
+
                                 return (
                                     <button
                                         key={m.id}
                                         onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
                                         className={cn(
-                                            "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap",
+                                            "w-full flex items-center px-3 py-2.5 rounded-xl transition-all whitespace-nowrap group",
                                             activeModule === m.id
                                                 ? "bg-blue-50 text-blue-600 font-bold shadow-sm"
                                                 : "text-slate-600 hover:bg-slate-50",
@@ -673,9 +721,24 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             isM00 && isM00Blinking && "animate-pulse ring-2 ring-blue-500 ring-offset-2 bg-blue-100"
                                         )}
                                     >
-                                        <Layers size={18} className={cn("opacity-70 flex-shrink-0", isSidebarExpanded ? "mr-3" : "mr-0")} />
-                                        {isSidebarExpanded && <span className="text-sm">{m.name}</span>}
-                                        {isSidebarExpanded && activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full" />}
+                                        <div className="relative">
+                                            <Layers
+                                                size={18}
+                                                className={cn(
+                                                    "opacity-70 flex-shrink-0 transition-all",
+                                                    isSidebarExpanded ? "mr-3" : "mr-0",
+                                                    module_has_data ? "text-blue-500 opacity-100" : "text-slate-400 font-normal",
+                                                    !module_has_data && activeModule === m.id && "animate-pulse scale-110"
+                                                )}
+                                            />
+                                            {module_has_data && (
+                                                <div className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center">
+                                                    <div className="w-1 h-1 bg-white rounded-full" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isSidebarExpanded && <span className={cn("text-sm", !module_has_data && "opacity-70 font-medium")}>{m.name}</span>}
+                                        {isSidebarExpanded && activeModule === m.id && <div className="ml-auto w-1.5 h-1.5 bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.5)]" />}
                                     </button>
                                 );
                             })}
@@ -691,7 +754,18 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                 .map(m => (
                                     <button
                                         key={m.id}
-                                        onClick={() => { setActiveModule(m.id); setIsMobileMenuOpen(false); }}
+                                        onClick={() => {
+                                            setActiveModule(m.id);
+                                            setIsMobileMenuOpen(false);
+                                            // Proactively add to selected modules if not already there
+                                            if (!data.selectedModules.some(sm => sm.id === m.id)) {
+                                                const newModule = { id: m.id, name: m.name, reason: "個別リサーチ対象に追加" };
+                                                setData({
+                                                    ...data,
+                                                    selectedModules: [...data.selectedModules, newModule]
+                                                });
+                                            }
+                                        }}
                                         className={cn(
                                             "w-full flex items-center px-3 py-2 rounded-lg transition-all whitespace-nowrap opacity-60 hover:opacity-100",
                                             activeModule === m.id ? "bg-slate-100 text-slate-900 font-bold opacity-100" : "text-slate-500 hover:bg-slate-50",
@@ -775,7 +849,11 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                 <Menu size={20} />
                             </button>
                         )}
-                        {!isPresentationMode && <span className="text-slate-400 print:hidden hidden sm:inline">{data.id ? `#${data.id} ` : "プロジェクト /"}</span>}
+                        {!isPresentationMode && (
+                            <div className="flex items-center bg-slate-100 px-2 py-1 rounded-lg mr-3 print:hidden">
+                                <span className="text-slate-500 text-[10px] font-black font-mono">ID: {data.id || "---"}</span>
+                            </div>
+                        )}
                         {isEditingTitle ? (
                             <input
                                 className="font-bold text-slate-900 text-lg lg:text-xl border-b-2 border-blue-500 focus:outline-none bg-transparent"
@@ -1774,6 +1852,25 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                     )}
 
                                     {/* M21: Individual Session & Seminar Design */}
+                                    {activeModule === "M21" && !data.m21Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <div className="w-20 h-20 bg-indigo-50 text-indigo-500 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+                                                <Users size={40} />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">個別相談・セミナー設計の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                成約率を最大化するためのセミナー構成と、<br />
+                                                個別相談でのクロージングまでの流れを具体化します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                詳細設計を生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M21" && data.m21Data && (
                                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                             <div>
@@ -1842,6 +1939,25 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                     )}
 
                                     {/* M51: Copywriting Mastery */}
+                                    {activeModule === "M51" && !data.m51Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <div className="w-20 h-20 bg-amber-50 text-amber-500 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+                                                <FileText size={40} />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">コピーライティング案の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                ターゲットに刺さる「売れる」見出し案と、<br />
+                                                AIを活用した執筆用プロンプトを生成します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-amber-600 text-white rounded-xl font-bold shadow-xl shadow-amber-100 hover:bg-amber-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                コピー案を生成する
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M51" && data.m51Data && (
                                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -1912,6 +2028,25 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                     )}
 
                                     {/* M52: SNS & Educational Funnel */}
+                                    {activeModule === "M52" && !data.m52Data && (
+                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <div className="w-20 h-20 bg-blue-50 text-blue-500 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+                                                <Share2 size={40} />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-slate-800 mb-3">SNS・ファンネル設計の生成</h3>
+                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                                X等のSNSでの教育発信プランと、<br />
+                                                成約までの集客導線（ファンネル）を設計します。
+                                            </p>
+                                            <button
+                                                onClick={handleGenerateDetail}
+                                                className="px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
+                                            >
+                                                <Zap className="mr-2" size={18} fill="currentColor" />
+                                                ファンネル設計を生成
+                                            </button>
+                                        </div>
+                                    )}
                                     {activeModule === "M52" && data.m52Data && (
                                         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
                                             <div>

@@ -288,9 +288,9 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
 
     const m30Data = isStartup ? {
         plSimulation: [
-            { year: 1, revenue: 0, profit: -800 },
-            { year: 2, revenue: 5000, profit: -200 },
-            { year: 3, revenue: 12000, profit: 3000 }
+            { year: 1, revenue: 0, profit: -8000000 },
+            { year: 2, revenue: 50000000, profit: -2000000 },
+            { year: 3, revenue: 120000000, profit: 30000000 }
         ],
         milestones: [
             { phase: "Seed", date: "2024/Q2", event: "MVPリリース・検証" },
@@ -298,11 +298,23 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
             { phase: "Series B", date: "2026/Q3", event: "全国展開・黒字化" }
         ],
         fundingNeeds: "向こう18ヶ月で3,000万円（人件費: 1,500万、マーケ: 1,000万、その他: 500万）"
+    } : isPersonal ? {
+        plSimulation: [
+            { year: 1, revenue: 1200000, profit: 1000000 },
+            { year: 2, revenue: 1800000, profit: 1500000 },
+            { year: 3, revenue: 2400000, profit: 2100000 }
+        ],
+        milestones: [
+            { phase: "検証期", date: "1ヶ月目", event: "サービス設計・集客開始" },
+            { phase: "成長期", date: "4ヶ月目", event: "月収5万円達成" },
+            { phase: "安定期", date: "12ヶ月目", event: "月収10万円達成" }
+        ],
+        fundingNeeds: "初期投資として5-10万円（PC・学習費）を想定。自己資金で賄えるスモールスタート構成。"
     } : {
         plSimulation: [
-            { year: 1, revenue: 3000, profit: 300 },
-            { year: 2, revenue: 3500, profit: 500 },
-            { year: 3, revenue: 4200, profit: 800 }
+            { year: 1, revenue: 30000000, profit: 3000000 },
+            { year: 2, revenue: 35000000, profit: 5000000 },
+            { year: 3, revenue: 42000000, profit: 8000000 }
         ],
         milestones: [
             { phase: "基盤強化", date: "3ヶ月後", event: "新システム安定稼働" },
