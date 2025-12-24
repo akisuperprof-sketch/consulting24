@@ -213,13 +213,34 @@ export default function Home() {
                 最短で“整理・判断・次の一手”を導き出す、<br />
                 プロコンサルの思考回路を再現した統合支援アプリ。
               </p>
-              <div className="pt-8">
+              <div className="pt-8 flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-6">
                 <button
                   onClick={() => setStep(1)}
-                  className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-blue-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-200"
+                  className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-white transition-all duration-200 bg-blue-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-200 w-full md:w-auto"
                 >
                   開始する
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+                </button>
+                <button
+                  onClick={() => {
+                    const saved = localStorage.getItem("consulting_history");
+                    if (saved) {
+                      try {
+                        const reports = JSON.parse(saved);
+                        if (reports.length > 0) {
+                          setAnalysisResult(reports[0].data);
+                          setStep(5);
+                        } else {
+                          alert("保存された履歴が見つかりません");
+                        }
+                      } catch (e) { alert("履歴データの読み込みに失敗しました"); }
+                    } else {
+                      alert("保存された履歴が見つかりません");
+                    }
+                  }}
+                  className="group relative inline-flex items-center justify-center px-8 py-4 font-bold text-slate-600 transition-all duration-200 bg-white border-2 border-slate-100 rounded-xl focus:outline-none hover:bg-slate-50 hover:border-slate-200 hover:text-slate-900 w-full md:w-auto"
+                >
+                  履歴から再開
                 </button>
               </div>
             </motion.div>
