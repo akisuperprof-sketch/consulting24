@@ -661,85 +661,165 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
         });
         content += `\n`;
 
-        if (data.m00Data) {
+        const isModuleActive = (id: string) => data.selectedModules.some(m => m.id === id);
+
+        // M00
+        if (data.m00Data || isModuleActive("M00")) {
             content += `## M00: Structure\n`;
-            content += `### Problems\n${data.m00Data.problems.map(p => `- ${p}`).join('\n')}\n`;
-            content += `### Goals\n${data.m00Data.goals.map(g => `- ${g}`).join('\n')}\n`;
-            content += `### Constraints\n${data.m00Data.constraints.map(c => `- ${c}`).join('\n')}\n`;
-            content += `### Assumptions\n${data.m00Data.assumptions.map(a => `- ${a}`).join('\n')}\n`;
+            if (data.m00Data) {
+                content += `### Problems\n${data.m00Data.problems.map(p => `- ${p}`).join('\n')}\n`;
+                content += `### Goals\n${data.m00Data.goals.map(g => `- ${g}`).join('\n')}\n`;
+                content += `### Constraints\n${data.m00Data.constraints.map(c => `- ${c}`).join('\n')}\n`;
+                content += `### Assumptions\n${data.m00Data.assumptions.map(a => `- ${a}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m10Data) {
+        // M10
+        if (data.m10Data || isModuleActive("M10")) {
             content += `\n## M10: Market Analysis\n`;
-            content += `Trends:\n${data.m10Data.trends.map(t => `- ${t.keyword} (${t.growth}): ${t.reasoning}`).join('\n')}\n`;
-            content += `Competitors:\n${data.m10Data.competitors.map(c => `- ${c.name} (${c.share}%): ${c.strength} / ${c.weakness}`).join('\n')}\n`;
+            if (data.m10Data) {
+                content += `Trends:\n${data.m10Data.trends.map(t => `- ${t.keyword} (${t.growth}): ${t.reasoning}`).join('\n')}\n`;
+                content += `Competitors:\n${data.m10Data.competitors.map(c => `- ${c.name} (${c.share}%): ${c.strength} / ${c.weakness}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m12Data) {
+        // M12
+        if (data.m12Data || isModuleActive("M12")) {
             content += `\n## M12: Trend & Keywords\n`;
-            content += `Trending Keywords:\n${data.m12Data.trendingKeywords.map(k => `- ${k.word} (Vol:${k.volume}, Growth:${k.growth})`).join('\n')}\n`;
-            content += `Related Queries:\n${data.m12Data.relatedQueries.join(', ')}\n`;
-            content += `Platform Strategy:\n${data.m12Data.platformStrategy.map(s => `- ${s.platform}: ${s.approach}`).join('\n')}\n`;
+            if (data.m12Data) {
+                content += `Trending Keywords:\n${data.m12Data.trendingKeywords.map(k => `- ${k.word} (Vol:${k.volume}, Growth:${k.growth})`).join('\n')}\n`;
+                content += `Related Queries:\n${data.m12Data.relatedQueries.join(', ')}\n`;
+                content += `Platform Strategy:\n${data.m12Data.platformStrategy.map(s => `- ${s.platform}: ${s.approach}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m20Data) {
+        // M20
+        if (data.m20Data || isModuleActive("M20")) {
             content += `\n## M20: Sales Strategy\n`;
-            content += `Target: ${typeof data.m20Data.targetPersona === 'string' ? data.m20Data.targetPersona : data.m20Data.targetPersona.profile}\n`;
-            content += `Core Value: ${data.m20Data.strategy.coreValue}\n`;
-            content += `Channels: ${data.m20Data.strategy.channels.join(', ')}\n`;
-            if (data.m20Data.actionPlans) {
-                content += `Action Plans:\n${data.m20Data.actionPlans.map(p => `- [${p.priority}] ${p.task} (By ${p.deadline})`).join('\n')}\n`;
+            if (data.m20Data) {
+                content += `Target: ${typeof data.m20Data.targetPersona === 'string' ? data.m20Data.targetPersona : data.m20Data.targetPersona.profile}\n`;
+                content += `Core Value: ${data.m20Data.strategy.coreValue}\n`;
+                content += `Channels: ${data.m20Data.strategy.channels.join(', ')}\n`;
+                if (data.m20Data.actionPlans) {
+                    content += `Action Plans:\n${data.m20Data.actionPlans.map(p => `- [${p.priority}] ${p.task} (By ${p.deadline})`).join('\n')}\n`;
+                }
+            } else {
+                content += `(詳細データ未生成)\n`;
             }
         }
 
-        if (data.m21Data) {
+        // M21
+        if (data.m21Data || isModuleActive("M21")) {
             content += `\n## M21: Seminar & Sales Talk\n`;
-            content += `Closing Strategy: ${data.m21Data.closingStrategy}\n`;
-            content += `Seminar Structure:\n${data.m21Data.seminarStructure.map(s => `- ${s.section}: ${s.content}`).join('\n')}\n`;
+            if (data.m21Data) {
+                content += `Closing Strategy: ${data.m21Data.closingStrategy}\n`;
+                content += `Seminar Structure:\n${data.m21Data.seminarStructure.map(s => `- ${s.section}: ${s.content}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m30Data) {
+        // M30
+        if (data.m30Data || isModuleActive("M30")) {
             content += `\n## M30: Business & Financing\n`;
-            if (data.m30Data.executiveSummary) content += `Summary: ${data.m30Data.executiveSummary}\n`;
-            content += `Milestones:\n${data.m30Data.milestones.map(m => `- ${m.date}: ${m.event} (${m.phase})`).join('\n')}\n`;
-            if (data.m30Data.fundingPlan) {
-                content += `Funding Plan:\n${data.m30Data.fundingPlan.map(f => `- ${f.method}: ${f.amount}`).join('\n')}\n`;
+            if (data.m30Data) {
+                if (data.m30Data.executiveSummary) content += `Summary: ${data.m30Data.executiveSummary}\n`;
+                content += `Milestones:\n${data.m30Data.milestones.map(m => `- ${m.date}: ${m.event} (${m.phase})`).join('\n')}\n`;
+                if (data.m30Data.fundingPlan) {
+                    content += `Funding Plan:\n${data.m30Data.fundingPlan.map(f => `- ${f.method}: ${f.amount}`).join('\n')}\n`;
+                }
+            } else {
+                content += `(詳細データ未生成)\n`;
             }
         }
 
-        if (data.m40Data) {
+        // M40
+        if (data.m40Data || isModuleActive("M40")) {
             content += `\n## M40: Operations\n`;
-            if (data.m40Data.currentBottlenecks) {
-                content += `Bottlenecks:\n${data.m40Data.currentBottlenecks.map(b => `- ${b}`).join('\n')}\n`;
-            }
-            if (data.m40Data.improvementFlow) {
-                content += `Improvement Flow:\n${data.m40Data.improvementFlow.map(f => `- ${f.before} -> ${f.after} [${f.tool}]`).join('\n')}\n`;
+            if (data.m40Data) {
+                if (data.m40Data.currentBottlenecks) {
+                    content += `Bottlenecks:\n${data.m40Data.currentBottlenecks.map(b => `- ${b}`).join('\n')}\n`;
+                }
+                if (data.m40Data.improvementFlow) {
+                    content += `Improvement Flow:\n${data.m40Data.improvementFlow.map(f => `- ${f.before} -> ${f.after} [${f.tool}]`).join('\n')}\n`;
+                }
+            } else {
+                content += `(詳細データ未生成)\n`;
             }
         }
 
-        if (data.m50Data) {
+        // M50
+        if (data.m50Data || isModuleActive("M50")) {
             content += `\n## M50: SNS & Content\n`;
-            if (data.m50Data.contentThemes) content += `Themes: ${data.m50Data.contentThemes.join(', ')}\n`;
-            if (data.m50Data.snsStrategy) {
-                content += `Strategy:\n${data.m50Data.snsStrategy.map(s => `- ${s.platform}: ${s.frequency}`).join('\n')}\n`;
+            if (data.m50Data) {
+                if (data.m50Data.contentThemes) content += `Themes: ${data.m50Data.contentThemes.join(', ')}\n`;
+                if (data.m50Data.snsStrategy) {
+                    content += `Strategy:\n${data.m50Data.snsStrategy.map(s => `- ${s.platform}: ${s.frequency}`).join('\n')}\n`;
+                }
+            } else {
+                content += `(詳細データ未生成)\n`;
             }
         }
 
-        if (data.m51Data) {
+        // M51
+        if (data.m51Data || isModuleActive("M51")) {
             content += `\n## M51: Copywriting\n`;
-            content += `Headlines:\n${data.m51Data.headlines.join('\n')}\n`;
-            content += `USP: ${data.m51Data.brief.usp}\n`;
+            if (data.m51Data) {
+                content += `Headlines:\n${data.m51Data.headlines.join('\n')}\n`;
+                content += `USP: ${data.m51Data.brief.usp}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m52Data) {
+        // M52
+        if (data.m52Data || isModuleActive("M52")) {
             content += `\n## M52: SNS Posts\n`;
-            content += `Drafts:\n${data.m52Data.xPosts.map(p => `- [${p.type}] ${p.draft}`).join('\n')}\n`;
+            if (data.m52Data) {
+                content += `Drafts:\n${data.m52Data.xPosts.map(p => `- [${p.type}] ${p.draft}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
 
-        if (data.m91Data) {
-            content += `\n## M91: Simulation\n`;
-            content += `Scenarios:\n${data.m91Data.scenarios.map(s => `- ${s.name}: ${s.result} (Prob: ${s.probability})`).join('\n')}\n`;
+        // M60
+        if (data.m60Data || isModuleActive("M60")) {
+            content += `\n## M60: App Development\n`;
+            if (data.m60Data) {
+                content += `Concept: ${data.m60Data.concept}\n`;
+                content += `Tech Stack:\n${data.m60Data.techStack.map(t => `- ${t.category}: ${t.selection}`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
         }
+
+        // M91
+        if (data.m91Data || isModuleActive("M91")) {
+            content += `\n## M91: Simulation\n`;
+            if (data.m91Data) {
+                content += `Scenarios:\n${data.m91Data.scenarios.map(s => `- ${s.name}: ${s.result} (Prob: ${s.probability})`).join('\n')}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
+        }
+
+        // M90
+        if (data.m90Data || isModuleActive("M90")) {
+            content += `\n## M90: Strategy Proposal\n`;
+            if (data.m90Data) {
+                content += `Executive Summary: ${data.m90Data.executiveSummary}\n`;
+                content += `Strategic Vision: ${data.m90Data.strategicVision}\n`;
+            } else {
+                content += `(詳細データ未生成)\n`;
+            }
+        }
+
 
         const blob = new Blob([content], { type: 'text/markdown' });
         const url = URL.createObjectURL(blob);
