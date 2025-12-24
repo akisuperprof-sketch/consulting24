@@ -2830,3 +2830,5 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
     );
 };
 
+export default Dashboard;
+
