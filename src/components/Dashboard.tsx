@@ -10,6 +10,7 @@ import {
     Layers,
     LayoutDashboard,
     MessageSquare,
+    RotateCcw,
     Plus,
     Save,
     Settings,
@@ -684,6 +685,28 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                     {/* M00: Structure */}
                                     {activeModule === "M00" && data.m00Data && (
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            {/* Top Actions for Landing */}
+                                            <div className="col-span-full flex justify-end space-x-4 mb-4">
+                                                <button
+                                                    onClick={() => {
+                                                        if (window.confirm("新規に分析を開始しますか？（現在の未保存データはクリアされます）")) {
+                                                            window.location.reload();
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors"
+                                                >
+                                                    <RotateCcw size={14} className="inline mr-1" />
+                                                    新規作成 (Reset)
+                                                </button>
+                                                <button
+                                                    onClick={() => setActiveModule("M92")}
+                                                    className="px-6 py-2 bg-purple-100 text-purple-700 rounded-lg text-sm font-bold hover:bg-purple-200 transition-colors flex items-center shadow-sm"
+                                                >
+                                                    <Library size={16} className="mr-2" />
+                                                    履歴から続ける (Resume)
+                                                </button>
+                                            </div>
+
                                             <div className="space-y-6">
                                                 <div className="flex items-center space-x-3 text-rose-600 font-black text-xs uppercase tracking-widest">
                                                     <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">!</div>
@@ -1333,7 +1356,6 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                             </div>
                         </div>
                     </div>
-                </div>
             </main>
         </div>
     );
