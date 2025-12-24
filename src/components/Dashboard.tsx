@@ -1214,55 +1214,54 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                                 </button>
                                             </div>
                                         </div>
-                                    );
-}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
-                                            <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
-                                                <Layers size={16} className="mr-2" /> Key Features
-                                            </h5>
-                                            <div className="space-y-4">
-                                                {data.m60Data.features.map((f, i) => (
-                                                    <div key={i} className="flex items-center space-x-3 group">
-                                                        <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                                            F{i + 1}
+                                    {activeModule === "M60" && data.m60Data && (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
+                                                <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
+                                                    <Layers size={16} className="mr-2" /> Key Features
+                                                </h5>
+                                                <div className="space-y-4">
+                                                    {data.m60Data.features.map((f, i) => (
+                                                        <div key={i} className="flex items-center space-x-3 group">
+                                                            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                                                                F{i + 1}
+                                                            </div>
+                                                            {isEditing ? (
+                                                                <input
+                                                                    className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
+                                                                    value={f}
+                                                                    onChange={(e) => updateM60('features', i, e.target.value)}
+                                                                />
+                                                            ) : (
+                                                                <div className="font-bold text-slate-700">{f}</div>
+                                                            )}
                                                         </div>
-                                                        {isEditing ? (
-                                                            <input
-                                                                className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
-                                                                value={f}
-                                                                onChange={(e) => updateM60('features', i, e.target.value)}
-                                                            />
-                                                        ) : (
-                                                            <div className="font-bold text-slate-700">{f}</div>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                                    ))}
+                                                </div>
                                             </div>
-                                        </div>
 
-                                        <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
-                                            <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
-                                                <Code size={16} className="mr-2" /> Tech Stack Strategy
-                                            </h5>
-                                            <div className="space-y-3">
-                                                {data.m60Data.techStack.map((t, i) => (
-                                                    <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                        {isEditing ? (
-                                                            <input
-                                                                className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
-                                                                value={t}
-                                                                onChange={(e) => updateM60('techStack', i, e.target.value)}
-                                                            />
-                                                        ) : (
-                                                            <div className="font-mono text-sm text-emerald-400">{t}</div>
-                                                        )}
-                                                    </div>
-                                                ))}
+                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
+                                                <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
+                                                    <Code size={16} className="mr-2" /> Tech Stack Strategy
+                                                </h5>
+                                                <div className="space-y-3">
+                                                    {data.m60Data.techStack.map((t, i) => (
+                                                        <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                            {isEditing ? (
+                                                                <input
+                                                                    className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
+                                                                    value={t}
+                                                                    onChange={(e) => updateM60('techStack', i, e.target.value)}
+                                                                />
+                                                            ) : (
+                                                                <div className="font-mono text-sm text-emerald-400">{t}</div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
                                 </div>
                                     )}
 
