@@ -36,7 +36,7 @@ export interface AnalysisResult {
     // M20: 販売戦略・成約導線
     m20Data?: {
         targetPersona: { profile: string; painPoints: string[]; gainPoints: string[] };
-        strategy: { coreValue: string; channels: string[]; pricing: string };
+        strategy: { coreValue: string; channels: string[]; pricing: string; keySuccessFactor: string };
         salesFlow: { step: string; purpose: string; script: string }[];
         actionPlans: { task: string; priority: "High" | "Mid" | "Low"; deadline: string }[];
     };
@@ -49,6 +49,7 @@ export interface AnalysisResult {
     // M30: 事業収支・資金調達
     m30Data?: {
         executiveSummary: string;
+        simulationLogic: string;
         plSimulation: { year: number; revenue: number; profit: number; note: string }[];
         milestones: { date: string; event: string; phase: string; requirement: string }[];
         fundingPlan: { method: string; amount: string; institutionalSupport: string }[];
@@ -201,13 +202,15 @@ ${Object.values(MODULES).map(m => `- ${m.id}: ${m.name} (${m.description})`).joi
     "strategy": { 
         "coreValue": "コアバリュー", 
         "channels": ["集客チャネル"], 
-        "pricing": "価格戦略" 
+        "pricing": "価格戦略",
+        "keySuccessFactor": "なぜ競合に勝てるかのKSF（一言で勝ち筋を言語化）"
     },
     "salesFlow": [{ "step": "ステップ名", "purpose": "目的", "script": "トークスクリプト" }],
     "actionPlans": [{ "task": "タスク", "priority": "High", "deadline": "期限" }]
   },
   "m30Data": {
     "executiveSummary": "事業サマリ",
+    "simulationLogic": "売上・利益の算出ロジック（例：客単価5000円×月間300人×CVR 2%...等）",
     "plSimulation": [{ "year": 1, "revenue": 1000, "profit": 100, "note": "メモ" }],
     "milestones": [{ "phase": "フェーズ", "date": "時期", "event": "イベント", "requirement": "要件" }],
     "fundingPlan": [{ "method": "調達方法", "amount": "金額", "institutionalSupport": "制度" }],
@@ -315,7 +318,8 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
             strategy: {
                 coreValue: "AIを活用したパーソナライズ・キャリア・ストラテジー",
                 channels: ["X / Note (教育)", "限定Webinar (納得)", "個別Zoom相談 (成約)"],
-                pricing: "298,000円 (3ヶ月コーチングプラン)"
+                pricing: "298,000円 (3ヶ月コーチングプラン)",
+                keySuccessFactor: "徹底したテンプレート化による『成果再現性』の担保と、人間味のある個別伴走のハイブリッド提供。"
             },
             salesFlow: [
                 { step: "認知 (SNS)", purpose: "専門性の認知と教育", script: "AI時代のサバイバルスキルを公開中" },
@@ -330,6 +334,7 @@ function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
         },
         m30Data: {
             executiveSummary: "本事業は、労働集約的なモデルから脱却し、AIによる自動化と専門性の掛け合わせにより、高い営業利益率（40%超）を早期に実現する高収益型モデルを目指します。",
+            simulationLogic: "平均客単価29.8万円 × 月間成約3件（初期）→ 10件（拡大期）。LTVはコミュニティ参加（月額1万円）により1.5倍を見込む。",
             plSimulation: [
                 { year: 1, revenue: 12000000, profit: 4000000, note: "初期投資と認知獲得フェーズ。赤字を抑えたスモールスタート。" },
                 { year: 2, revenue: 48000000, profit: 22000000, note: "LTVの向上と紹介・リピートによる広告費の効率化。" }

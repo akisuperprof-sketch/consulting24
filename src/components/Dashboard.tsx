@@ -193,14 +193,20 @@ const sanitizeAnalysisResult = (data: AnalysisResult): AnalysisResult => {
             newData.m20Data.strategy = {
                 coreValue: typeof newData.m20Data.strategy === 'string' ? newData.m20Data.strategy : "Unique Value",
                 channels: [],
-                pricing: "TBD"
+                pricing: "TBD",
+                keySuccessFactor: ""
             };
+        } else if (!newData.m20Data.strategy.keySuccessFactor) {
+            newData.m20Data.strategy.keySuccessFactor = "競合優位性の源泉（KSF）をここに記述";
         }
     }
 
-    // M30: Cleanup
+    // M30: Cleanup & Migration
     if (newData.m30Data) {
         delete (newData.m30Data as any).fundingNeeds;
+        if (!newData.m30Data.simulationLogic) {
+            newData.m30Data.simulationLogic = "収益シミュレーションの前提ロジックをここに記述";
+        }
     }
 
     // M40: Bottlenecks migration
@@ -419,7 +425,8 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                     strategy: {
                         coreValue: isPersonal ? "誰でも再現可能なスモールステップ" : "短期間で実務レベルのAIスキル習得",
                         channels: isPersonal ? ["SNS (X/Instagram)", "ココナラ", "ブログ"] : ["LinkedIn", "Tech系メディア", "ウェビナー"],
-                        pricing: "Sub"
+                        pricing: "Sub",
+                        keySuccessFactor: "既存業務フローへの『溶け込みやすさ』と、学習コストゼロのUI。"
                     },
                     salesFlow: [], // Ensure this property exists
                     actionPlans: [
@@ -446,7 +453,8 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         ],
                         fundingPlan: [],
                         teamProfile: [],
-                        riskAnalysis: []
+                        riskAnalysis: [],
+                        simulationLogic: ""
                     };
                 } else {
                     newData.m30Data = {
@@ -465,7 +473,8 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         ],
                         fundingPlan: [],
                         teamProfile: [],
-                        riskAnalysis: []
+                        riskAnalysis: [],
+                        simulationLogic: "コンサル単価100万円×3件＋SaaS単価5万円×50社（2年目目標）。"
                     };
                 }
 
@@ -706,6 +715,9 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                 content += `Target: ${typeof data.m20Data.targetPersona === 'string' ? data.m20Data.targetPersona : data.m20Data.targetPersona.profile}\n`;
                 content += `Core Value: ${data.m20Data.strategy.coreValue}\n`;
                 content += `Channels: ${data.m20Data.strategy.channels.join(', ')}\n`;
+                if (data.m20Data.strategy.keySuccessFactor) {
+                    content += `Key Success Factor: ${data.m20Data.strategy.keySuccessFactor}\n`;
+                }
                 if (data.m20Data.actionPlans) {
                     content += `Action Plans:\n${data.m20Data.actionPlans.map(p => `- [${p.priority}] ${p.task} (By ${p.deadline})`).join('\n')}\n`;
                 }
@@ -730,6 +742,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
             content += `\n## M30: Business & Financing\n`;
             if (data.m30Data) {
                 if (data.m30Data.executiveSummary) content += `Summary: ${data.m30Data.executiveSummary}\n`;
+                if (data.m30Data.simulationLogic) content += `Simulation Logic: ${data.m30Data.simulationLogic}\n`;
                 content += `Milestones:\n${data.m30Data.milestones.map(m => `- ${m.date}: ${m.event} (${m.phase})`).join('\n')}\n`;
                 if (data.m30Data.fundingPlan) {
                     content += `Funding Plan:\n${data.m30Data.fundingPlan.map(f => `- ${f.method}: ${f.amount}`).join('\n')}\n`;
