@@ -158,6 +158,93 @@ const MarkdownText = ({ text }: { text: string }) => {
     );
 };
 
+const sanitizeAnalysisResult = (data: AnalysisResult): AnalysisResult => {
+    const newData = JSON.parse(JSON.stringify(data)); // Deep copy to avoid mutation
+
+    // M10: Trends Migration (string[] -> object[])
+    if (newData.m10Data?.trends && newData.m10Data.trends.length > 0 && typeof newData.m10Data.trends[0] === 'string') {
+        newData.m10Data.trends = (newData.m10Data.trends as any[]).map((t: string) => ({
+            keyword: t,
+            growth: "High",
+            platform: "Multiple",
+            reasoning: "Legacy data migration"
+        }));
+    }
+    // M10: Cleanup
+    if (newData.m10Data) {
+        delete (newData.m10Data as any).marketSize;
+        delete (newData.m10Data as any).growthRate;
+    }
+
+    // M12: Default initialization
+    // No specific migration needed, but ensure it exists if active
+
+    // M20: TargetPersona Migration (string -> object)
+    if (newData.m20Data) {
+        if (typeof newData.m20Data.targetPersona === 'string') {
+            newData.m20Data.targetPersona = {
+                profile: newData.m20Data.targetPersona,
+                painPoints: [],
+                gainPoints: []
+            };
+        }
+        // M20: Strategy Migration (ensure object structure)
+        if (!newData.m20Data.strategy || Array.isArray(newData.m20Data.strategy) || typeof newData.m20Data.strategy === 'string') {
+            newData.m20Data.strategy = {
+                coreValue: typeof newData.m20Data.strategy === 'string' ? newData.m20Data.strategy : "Unique Value",
+                channels: [],
+                pricing: "TBD"
+            };
+        }
+    }
+
+    // M30: Cleanup
+    if (newData.m30Data) {
+        delete (newData.m30Data as any).fundingNeeds;
+    }
+
+    // M40: Bottlenecks migration
+    if (newData.m40Data) {
+        if ((newData.m40Data as any).bottlenecks) {
+            newData.m40Data.currentBottlenecks = (newData.m40Data as any).bottlenecks;
+            delete (newData.m40Data as any).bottlenecks;
+        }
+        // ImprovementFlow migration (string[] -> object[])
+        if (newData.m40Data.improvementPlan) {
+            // Map old improvementPlan to new improvementFlow if needed, or just clear it to avoid crashes
+            if (!newData.m40Data.improvementFlow && Array.isArray(newData.m40Data.improvementPlan)) {
+                newData.m40Data.improvementFlow = newData.m40Data.improvementPlan.map((p: string) => ({
+                    before: "Legacy Plan",
+                    after: p,
+                    tool: "Manual"
+                }));
+            }
+            delete (newData.m40Data as any).improvementPlan;
+        }
+    }
+
+    // M50: Themes migration
+    if (newData.m50Data) {
+        if ((newData.m50Data as any).themes) {
+            newData.m50Data.contentThemes = (newData.m50Data as any).themes;
+            delete (newData.m50Data as any).themes;
+        }
+        // Schedule -> SNS Strategy migration
+        if ((newData.m50Data as any).schedule) {
+            if (!newData.m50Data.snsStrategy) {
+                newData.m50Data.snsStrategy = [{
+                    platform: "Legacy Schedule",
+                    frequency: ((newData.m50Data as any).schedule as string[]).join(", "),
+                    kpis: []
+                }];
+            }
+            delete (newData.m50Data as any).schedule;
+        }
+    }
+
+    return newData;
+};
+
 interface DashboardProps {
     analysis: AnalysisResult;
     onRestart: () => void;
@@ -165,14 +252,17 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardProps) {
-    const [activeModule, setActiveModule] = useState<ModuleId>(analysis.selectedModules[0].id);
+    // Sanitize input data immediately
+    const sanitizedInitialData = useMemo(() => sanitizeAnalysisResult(analysis), [analysis]);
+
+    const [activeModule, setActiveModule] = useState<ModuleId>(sanitizedInitialData.selectedModules[0].id);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isPresentationMode, setIsPresentationMode] = useState(false);
     const [showHelp, setShowHelp] = useState(true);
 
     // Data State (for editing)
-    const [data, setData] = useState<AnalysisResult>(analysis);
+    const [data, setData] = useState<AnalysisResult>(sanitizedInitialData);
     const [isEditing, setIsEditing] = useState(false);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [tempTitle, setTempTitle] = useState("");
@@ -215,14 +305,14 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
     };
 
     const loadHistoryItem = (report: { data: AnalysisResult }) => {
-        setData(report.data);
-        setActiveModule(report.data.selectedModules[0].id);
-
+        const sanitizedData = sanitizeAnalysisResult(report.data);
+        setData(sanitizedData);
+        setActiveModule(sanitizedData.selectedModules[0].id);
     };
 
     // Sync props to state if props change (optional)
     useEffect(() => {
-        setData(analysis);
+        setData(sanitizeAnalysisResult(analysis));
     }, [analysis]);
 
     // Chat State
