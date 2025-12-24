@@ -45,10 +45,16 @@ import {
     MessageCircle,
     Share2,
     Twitter,
-    ArrowRightCircle
+    ArrowRightCircle,
+    Package,
+    Database,
+    Table,
+    Search,
+    HandCoins,
+    ExternalLink
 } from "lucide-react";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { AnalysisResult, chatWithAI } from "@/app/actions";
 
 import { ModuleId, MODULES } from "@/lib/modules";
@@ -120,18 +126,30 @@ const MarkdownText = ({ text }: { text: string }) => {
                 // Handle basic list items
                 const isList = line.trim().startsWith('- ') || line.trim().startsWith('* ') || /^\d+\./.test(line.trim());
 
+                // Split by key patterns: Bold (**text**) and URLs (http://...)
+                const parts = line.split(/(\*\*.*?\*\*)|(https?:\/\/[^\s]+)/g);
+
                 return (
                     <div key={i} className={cn(isList ? "pl-4 relative" : "")}>
                         {isList && <span className="absolute left-0 top-0 text-blue-400">•</span>}
-                        {line.split(/(\*\*.*?\*\*)/).map((part, j) => {
+                        {parts.map((part, j) => {
+                            if (!part) return null;
+
                             if (part.startsWith('**') && part.endsWith('**')) {
                                 return (
-                                    <strong key={j} className="text-white font-black px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 shadow-sm mx-0.5">
+                                    <strong key={j} className="text-slate-900 font-black px-1.5 py-0.5 bg-blue-100/50 rounded border border-blue-200 shadow-sm mx-0.5">
                                         {part.slice(2, -2)}
                                     </strong>
                                 );
+                            } else if (part.match(/^https?:\/\//)) {
+                                return (
+                                    <a key={j} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 hover:underline break-all font-bold inline-flex items-center">
+                                        <ExternalLink size={12} className="mr-0.5 inline" />
+                                        {part}
+                                    </a>
+                                );
                             }
-                            return part;
+                            return <span key={j}>{part}</span>;
                         })}
                     </div>
                 );
@@ -217,6 +235,19 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
     const [isGenerating, setIsGenerating] = useState(false);
     const [isM00Blinking, setIsM00Blinking] = useState(false);
 
+    // Simulation states
+    const [revenueMultiplier, setRevenueMultiplier] = useState(1.0);
+    const [costMultiplier, setCostMultiplier] = useState(1.0);
+
+    const simulatedPL = useMemo(() => {
+        if (!data.m30Data) return [];
+        return data.m30Data.plSimulation.map(year => ({
+            ...year,
+            revenue: Math.round(year.revenue * revenueMultiplier),
+            profit: Math.round((year.revenue * revenueMultiplier) - ((year.revenue - year.profit) * costMultiplier))
+        }));
+    }, [data.m30Data, revenueMultiplier, costMultiplier]);
+
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const [showScrollHint, setShowScrollHint] = useState(false);
 
@@ -270,6 +301,13 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                     ] : [
                         { name: "A社 (大手)", share: 45, strength: "ブランド力" },
                         { name: "B社 (新興)", share: 15, strength: "AI技術" }
+                    ],
+                    evidence: isPersonal ? [
+                        { source: "フリーランス実態調査 2024", url: "https://www.lancers.co.jp/news/pr/21568/" },
+                        { source: "総務省: 労働力調査報告", url: "https://www.stat.go.jp/data/roudou/index.html" }
+                    ] : [
+                        { source: "IDC Japan: AI市場予測 2024", url: "https://www.idc.com/jp/report/market-forecast" },
+                        { source: "文部科学省: 教育情報化の現状", url: "https://www.mext.go.jp/a_menu/shotou/zyouhou/index.htm" }
                     ]
                 };
                 updated = true;
@@ -538,119 +576,248 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
         document.body.removeChild(a);
     };
 
-    // Helper to update deeply nested M00/M20 data safely
-    const updateM00 = (field: 'problems' | 'goals', index: number, value: string) => {
-        if (!data.m00Data) return;
-        const newData = { ...data };
-        if (newData.m00Data) {
-            const list = [...newData.m00Data[field]];
+    // Generic deep update helper
+    const updateData = (updater: (prev: AnalysisResult) => AnalysisResult) => {
+        setData(prev => {
+            const newData = updater(prev);
+            return newData;
+        });
+    };
+
+    const updateM00 = (field: 'problems' | 'goals' | 'constraints' | 'assumptions', index: number, value: string) => {
+        updateData(prev => {
+            if (!prev.m00Data) return prev;
+            const next = { ...prev, m00Data: { ...prev.m00Data } };
+            const list = [...next.m00Data[field]];
             list[index] = value;
-            newData.m00Data[field] = list;
-            setData(newData);
-        }
+            next.m00Data[field] = list;
+            return next;
+        });
     };
 
-    const updateM20 = (field: 'targetPersona' | 'coreValue', value: string) => {
-        if (!data.m20Data) return;
-        const newData = { ...data };
-        if (newData.m20Data) {
-            newData.m20Data[field] = value;
-            setData(newData);
-        }
-    };
-
-    const updateM10 = (field: keyof NonNullable<AnalysisResult['m10Data']>, index: number = -1, subField: 'name' | 'share' | null = null, value: string | number) => {
-        if (!data.m10Data) return;
-        const newData = { ...data };
-        if (newData.m10Data) { // Ensure m10Data exists before proceeding
-            if (field === 'trends' && index >= 0) {
-                const list = [...newData.m10Data.trends];
-                list[index] = value as string; // trends are strings
-                newData.m10Data.trends = list;
-            } else if (field === 'competitors' && index >= 0 && subField) {
-                const list = [...newData.m10Data.competitors];
-                list[index] = { ...list[index], [subField]: subField === 'share' ? Number(value) : value };
-                newData.m10Data.competitors = list;
-            } else if (field !== 'trends' && field !== 'competitors') {
-                // For 'marketSize' and 'growthRate'
-                (newData.m10Data as any)[field] = value;
+    const updateM10 = (field: keyof NonNullable<AnalysisResult['m10Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m10Data) return prev;
+            const next = { ...prev, m10Data: { ...prev.m10Data } };
+            if (Array.isArray(next.m10Data[field])) {
+                const arr = [...(next.m10Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m10Data as any)[field] = arr;
             }
-            setData(newData);
-        }
+            return next;
+        });
     };
 
-    // Helper for M60 (App Dev)
-    const updateM60 = (field: 'concept' | 'features' | 'techStack', index: number = -1, value: string) => {
-        if (!data.m60Data) return;
-        const newData = { ...data };
-        if (newData.m60Data) {
-            if (field === 'features' && index >= 0) {
-                const list = [...newData.m60Data.features];
+    const updateM12 = (field: keyof NonNullable<AnalysisResult['m12Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m12Data) return prev;
+            const next = { ...prev, m12Data: { ...prev.m12Data } };
+            if (Array.isArray(next.m12Data[field])) {
+                const arr = [...(next.m12Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m12Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM20 = (field: keyof NonNullable<AnalysisResult['m20Data']>, index: number = -1, subField: string | null = null, value: any) => {
+        updateData(prev => {
+            if (!prev.m20Data) return prev;
+            const next = { ...prev, m20Data: { ...prev.m20Data } };
+            if (field === 'targetPersona' && subField) {
+                next.m20Data.targetPersona = { ...next.m20Data.targetPersona, [subField]: value };
+            } else if (field === 'strategy' && subField) {
+                next.m20Data.strategy = { ...next.m20Data.strategy, [subField]: value };
+            } else if (Array.isArray(next.m20Data[field]) && index >= 0) {
+                const arr = [...(next.m20Data[field] as any[])];
+                if (subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else {
+                    arr[index] = value;
+                }
+                (next.m20Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM21 = (field: keyof NonNullable<AnalysisResult['m21Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m21Data) return prev;
+            const next = { ...prev, m21Data: { ...prev.m21Data } };
+            if (field === 'closingStrategy') {
+                next.m21Data.closingStrategy = value;
+            } else if (Array.isArray(next.m21Data[field])) {
+                const arr = [...(next.m21Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m21Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM30 = (field: keyof NonNullable<AnalysisResult['m30Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m30Data) return prev;
+            const next = { ...prev, m30Data: { ...prev.m30Data } };
+            if (field === 'executiveSummary') {
+                next.m30Data.executiveSummary = value;
+            } else if (Array.isArray(next.m30Data[field])) {
+                const arr = [...(next.m30Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m30Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM40 = (field: keyof NonNullable<AnalysisResult['m40Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m40Data) return prev;
+            const next = { ...prev, m40Data: { ...prev.m40Data } };
+            if (field === 'costReduction') {
+                next.m40Data.costReduction = value;
+            } else if (Array.isArray(next.m40Data[field])) {
+                const arr = [...(next.m40Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m40Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM50 = (field: keyof NonNullable<AnalysisResult['m50Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m50Data) return prev;
+            const next = { ...prev, m50Data: { ...prev.m50Data } };
+            if (Array.isArray(next.m50Data[field])) {
+                const arr = [...(next.m50Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m50Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM51 = (field: keyof NonNullable<AnalysisResult['m51Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m51Data) return prev;
+            const next = { ...prev, m51Data: { ...prev.m51Data } };
+            if (field === 'brief' && subField) {
+                (next.m51Data.brief as any)[subField] = value;
+            } else if (Array.isArray(next.m51Data[field])) {
+                const arr = [...(next.m51Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m51Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM52 = (field: keyof NonNullable<AnalysisResult['m52Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m52Data) return prev;
+            const next = { ...prev, m52Data: { ...prev.m52Data } };
+            if (field === 'funnelDesign') {
+                next.m52Data.funnelDesign = value;
+            } else if (Array.isArray(next.m52Data[field])) {
+                const arr = [...(next.m52Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m52Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM60 = (field: keyof NonNullable<AnalysisResult['m60Data']>, index: number, subField: string | null, value: any) => {
+        updateData(prev => {
+            if (!prev.m60Data) return prev;
+            const next = { ...prev, m60Data: { ...prev.m60Data } };
+            if (field === 'concept') {
+                next.m60Data.concept = value;
+            } else if (field === 'systemDefinition' && subField) {
+                next.m60Data.systemDefinition = { ...(next.m60Data.systemDefinition || { name: "", purpose: "", successDefinition: "", targetUser: "" }), [subField]: value };
+            } else if (Array.isArray(next.m60Data[field])) {
+                const arr = [...(next.m60Data[field] as any[])];
+                if (index >= 0 && subField) {
+                    arr[index] = { ...arr[index], [subField]: value };
+                } else if (index >= 0) {
+                    arr[index] = value;
+                }
+                (next.m60Data as any)[field] = arr;
+            }
+            return next;
+        });
+    };
+
+    const updateM90 = (field: keyof NonNullable<AnalysisResult['m90Data']>, value: string) => {
+        updateData(prev => {
+            if (!prev.m90Data) return prev;
+            return { ...prev, m90Data: { ...prev.m90Data, [field]: value } };
+        });
+    };
+
+    const updateM91 = (field: 'scenarios' | 'parameters', index: number, subField: string | null, value: string) => {
+        updateData(prev => {
+            if (!prev.m91Data) return prev;
+            const next = { ...prev, m91Data: { ...prev.m91Data } };
+            const arr = [...(next.m91Data[field] as any[])];
+            if (index >= 0 && subField) {
+                arr[index] = { ...arr[index], [subField]: value };
+            } else if (index >= 0 && field === 'parameters') {
+                arr[index] = { ...arr[index], value: value };
+            }
+            (next.m91Data as any)[field] = arr;
+            return next;
+        });
+    };
+
+    const updateM99 = (field: 'overview' | 'details', index: number = -1, value: string) => {
+        updateData(prev => {
+            if (!prev.m99Data) return prev;
+            const next = { ...prev, m99Data: { ...prev.m99Data } };
+            if (field === 'details' && index >= 0) {
+                const list = [...next.m99Data.details];
                 list[index] = value;
-                newData.m60Data.features = list;
-            } else if (field === 'techStack' && index >= 0) {
-                const list = [...newData.m60Data.techStack];
-                list[index] = value;
-                newData.m60Data.techStack = list;
-            } else if (field === 'concept') {
-                newData.m60Data.concept = value;
+                next.m99Data.details = list;
+            } else if (field === 'overview') {
+                next.m99Data.overview = value;
             }
-            setData(newData);
-        }
-    };
-
-    // M30 Update Helper with Simulation Logic
-    const updateM30 = (field: 'milestones' | 'fundingNeeds', index: number = -1, subField: 'event' | 'date' | 'phase' | null = null, value: string) => {
-        if (!data.m30Data) return;
-        const newData = { ...data };
-        if (newData.m30Data) {
-            if (field === 'milestones' && index >= 0 && subField) {
-                const list = [...newData.m30Data.milestones];
-                list[index] = { ...list[index], [subField]: value };
-                newData.m30Data.milestones = list;
-            } else if (field === 'fundingNeeds') {
-                newData.m30Data.fundingNeeds = value;
-            }
-            setData(newData);
-        }
-    };
-
-    // Dynamic Logic for Sliders (Temporary State)
-    const [revenueMultiplier, setRevenueMultiplier] = useState(1.0);
-    const [costMultiplier, setCostMultiplier] = useState(1.0);
-
-    const simulatedPL = data.m30Data?.plSimulation?.map(item => ({
-        ...item,
-        revenue: Math.round(item.revenue * revenueMultiplier),
-        profit: Math.round(item.revenue * revenueMultiplier * 0.4 * (2 - costMultiplier)) // Simplified logic: Profit follows revenue but impacted by cost
-    })) || null;
-
-    const updateM40 = (field: 'bottlenecks' | 'improvementPlan', index: number, value: string) => {
-        if (!data.m40Data) return;
-        const newData = { ...data };
-        if (newData.m40Data) {
-            const list = [...newData.m40Data[field]];
-            list[index] = value;
-            newData.m40Data[field] = list;
-            setData(newData);
-        }
-    };
-
-    const updateM50 = (field: 'themes' | 'kpis', index: number, subField: 'metric' | 'target' | null = null, value: string) => {
-        if (!data.m50Data) return;
-        const newData = { ...data };
-        if (newData.m50Data) {
-            if (field === 'themes') {
-                const list = [...newData.m50Data.themes];
-                list[index] = value;
-                newData.m50Data.themes = list;
-            } else if (field === 'kpis' && subField) {
-                const list = [...newData.m50Data.kpis];
-                list[index] = { ...list[index], [subField]: value };
-                newData.m50Data.kpis = list;
-            }
-            setData(newData);
-        }
+            return next;
+        });
     };
 
     return (
@@ -997,14 +1164,14 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                             <div className="bg-white rounded-[2rem] border border-slate-200 shadow-sm p-4 lg:p-8 min-h-[500px] relative overflow-hidden">
                                 {/* Watermark for skeleton */}
                                 <div className="absolute top-10 right-10 flex items-center space-x-2 text-slate-50 select-none pointer-events-none">
-                                    <BarChart3 size={120} className="rotate-12 opacity-30" />
+                                    <BarChart3 size={90} className="rotate-12 opacity-30" />
                                 </div>
 
                                 <div className="relative z-10">
                                     {/* M00: Structure */}
                                     {activeModule === "M00" && data.m00Data && (
-                                        <div className="space-y-10">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                        <div className="space-y-6">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-100">
                                                 <div className="space-y-6">
                                                     <div className="flex items-center space-x-3 text-rose-600 font-black text-xs uppercase tracking-widest">
                                                         <div className="w-6 h-6 rounded-full bg-rose-50 flex items-center justify-center border border-rose-100">!</div>
@@ -1014,7 +1181,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         {data.m00Data.problems.map((p, i) => (
                                                             <motion.div
                                                                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                                                                key={i} className="p-6 bg-slate-50 border border-slate-100 rounded-3xl text-slate-700 font-medium leading-relaxed"
+                                                                key={i} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-medium leading-relaxed font-sans"
                                                             >
                                                                 {isEditing ? (
                                                                     <textarea
@@ -1037,7 +1204,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         {data.m00Data.goals.map((g, i) => (
                                                             <motion.div
                                                                 initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                                                                key={i} className="p-6 bg-blue-50/30 border border-blue-100/50 rounded-3xl text-slate-700 font-medium leading-relaxed italic"
+                                                                key={i} className="p-5 bg-blue-50/30 border border-blue-100/50 rounded-2xl text-slate-700 font-medium leading-relaxed italic font-sans"
                                                             >
                                                                 {isEditing ? (
                                                                     <textarea
@@ -1052,16 +1219,49 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center space-x-3 text-amber-600 font-black text-xs uppercase tracking-widest">
+                                                        <Lock size={14} />
+                                                        <span>制約条件 (Constraints)</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {data.m00Data.constraints.map((c, i) => (
+                                                            <div key={i} className="px-4 py-2 bg-amber-50 rounded-xl border border-amber-100 text-[13px] font-bold text-amber-700">
+                                                                {isEditing ? (
+                                                                    <input className="bg-transparent border-b border-amber-200 outline-none w-24" value={c} onChange={(e) => updateM00('constraints', i, e.target.value)} />
+                                                                ) : c}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-6">
+                                                    <div className="flex items-center space-x-3 text-slate-500 font-black text-xs uppercase tracking-widest">
+                                                        <LightbulbIcon size={14} />
+                                                        <span>前提条件 (Assumptions)</span>
+                                                    </div>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {data.m00Data.assumptions.map((a, i) => (
+                                                            <div key={i} className="px-4 py-2 bg-slate-100 rounded-xl border border-slate-200 text-[13px] font-bold text-slate-600">
+                                                                {isEditing ? (
+                                                                    <input className="bg-transparent border-b border-slate-300 outline-none w-24" value={a} onChange={(e) => updateM00('assumptions', i, e.target.value)} />
+                                                                ) : a}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <NextStepBox type="構造" />
                                         </div>
                                     )}
 
                                     {/* M20: Sales Strategy */}
                                     {activeModule === "M20" && !data.m20Data && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <Users size={64} className="text-indigo-200 mb-6" />
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3">販売戦略・ターゲットの定義</h3>
-                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Users size={56} className="text-indigo-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">販売戦略・ターゲットの定義</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
                                                 {data.theme ? `「${data.theme}」に` : ""}最適なターゲットペルソナと<br />
                                                 具体的なアクションプランを策定します。
                                             </p>
@@ -1075,154 +1275,269 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {activeModule === "M20" && data.m20Data && (
-                                        <div className="space-y-6">
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="p-6 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-100 rounded-3xl group">
-                                                    <Users size={32} className="text-indigo-600 mb-6 group-hover:scale-110 transition-transform" />
-                                                    <h4 className="font-black text-xs text-indigo-700 uppercase tracking-widest mb-4">Target Persona</h4>
-                                                    {isEditing ? (
-                                                        <input
-                                                            className="w-full text-xl font-bold text-slate-800 bg-white/50 border-b border-indigo-200 focus:outline-none focus:border-indigo-500 rounded px-2 py-1"
-                                                            value={data.m20Data.targetPersona}
-                                                            onChange={(e) => updateM20('targetPersona', e.target.value)}
-                                                        />
-                                                    ) : (
-                                                        <p className="text-xl font-bold text-slate-800 leading-tight">{data.m20Data.targetPersona}</p>
-                                                    )}
+                                        <div className="space-y-8">
+                                            {/* Persona Section */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                <div className="lg:col-span-2 p-6 bg-white border border-slate-100 rounded-3xl shadow-sm">
+                                                    <div className="flex items-center space-x-2 text-indigo-600 mb-4">
+                                                        <Users size={20} />
+                                                        <span className="text-xs font-black uppercase tracking-widest">Target Persona Profile</span>
+                                                    </div>
+                                                    <div className="space-y-4">
+                                                        {isEditing ? (
+                                                            <textarea
+                                                                className="w-full text-lg font-bold text-slate-800 bg-slate-50 border-none rounded-xl p-4 focus:ring-2 focus:ring-indigo-500"
+                                                                value={data.m20Data.targetPersona.profile}
+                                                                onChange={(e) => updateM20('targetPersona', -1, 'profile', e.target.value)}
+                                                                rows={3}
+                                                            />
+                                                        ) : (
+                                                            <p className="text-lg font-bold text-slate-800 leading-tight">{data.m20Data.targetPersona.profile}</p>
+                                                        )}
+                                                        <div className="grid grid-cols-2 gap-4">
+                                                            <div className="space-y-2">
+                                                                <span className="text-[10px] font-black text-rose-500 uppercase">Pain Points (現有課題)</span>
+                                                                <ul className="space-y-1">
+                                                                    {data.m20Data.targetPersona.painPoints.map((p, i) => (
+                                                                        <li key={i} className="text-sm text-slate-600 flex items-start">
+                                                                            <span className="text-rose-400 mr-2">✕</span>
+                                                                            {isEditing ? (
+                                                                                <input className="w-full bg-transparent border-b border-rose-100 focus:outline-none" value={p} onChange={(e) => {
+                                                                                    const list = [...data.m20Data!.targetPersona.painPoints];
+                                                                                    list[i] = e.target.value;
+                                                                                    updateM20('targetPersona', -1, 'painPoints', list);
+                                                                                }} />
+                                                                            ) : p}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <span className="text-[10px] font-black text-emerald-500 uppercase">Gain Points (期待価値)</span>
+                                                                <ul className="space-y-1">
+                                                                    {data.m20Data.targetPersona.gainPoints.map((g, i) => (
+                                                                        <li key={i} className="text-sm text-slate-600 flex items-start">
+                                                                            <span className="text-emerald-400 mr-2">✓</span>
+                                                                            {isEditing ? (
+                                                                                <input className="w-full bg-transparent border-b border-emerald-100 focus:outline-none" value={g} onChange={(e) => {
+                                                                                    const list = [...data.m20Data!.targetPersona.gainPoints];
+                                                                                    list[i] = e.target.value;
+                                                                                    updateM20('targetPersona', -1, 'gainPoints', list);
+                                                                                }} />
+                                                                            ) : g}
+                                                                        </li>
+                                                                    ))}
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="p-6 bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-100 rounded-3xl group">
-                                                    <ShieldCheck size={32} className="text-emerald-600 mb-6 group-hover:scale-110 transition-transform" />
-                                                    <h4 className="font-black text-xs text-emerald-700 uppercase tracking-widest mb-4">Core Value</h4>
-                                                    {isEditing ? (
-                                                        <input
-                                                            className="w-full text-xl font-bold text-slate-800 bg-white/50 border-b border-emerald-200 focus:outline-none focus:border-emerald-500 rounded px-2 py-1"
-                                                            value={data.m20Data.coreValue}
-                                                            onChange={(e) => updateM20('coreValue', e.target.value)}
-                                                        />
-                                                    ) : (
-                                                        <p className="text-xl font-bold text-slate-800 leading-tight">{data.m20Data.coreValue}</p>
-                                                    )}
+                                                <div className="p-6 bg-indigo-600 text-white rounded-3xl shadow-xl shadow-indigo-100 flex flex-col justify-between">
+                                                    <div>
+                                                        <div className="flex items-center space-x-2 text-indigo-200 mb-6">
+                                                            <ShieldCheck size={20} />
+                                                            <span className="text-xs font-black uppercase tracking-widest">Core Strategy</span>
+                                                        </div>
+                                                        <div className="space-y-6">
+                                                            <div>
+                                                                <label className="text-[10px] text-indigo-300 font-bold uppercase block mb-1">Value Proposition</label>
+                                                                {isEditing ? (
+                                                                    <input className="w-full bg-indigo-500 border-none rounded p-1 text-sm font-bold" value={data.m20Data.strategy.coreValue} onChange={(e) => updateM20('strategy', -1, 'coreValue', e.target.value)} />
+                                                                ) : (
+                                                                    <div className="text-lg font-black leading-tight">{data.m20Data.strategy.coreValue}</div>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <label className="text-[10px] text-indigo-300 font-bold uppercase block mb-1">Pricing Model</label>
+                                                                {isEditing ? (
+                                                                    <input className="w-full bg-indigo-500 border-none rounded p-1 text-sm font-bold" value={data.m20Data.strategy.pricing} onChange={(e) => updateM20('strategy', -1, 'pricing', e.target.value)} />
+                                                                ) : (
+                                                                    <div className="text-xl font-black">{data.m20Data.strategy.pricing}</div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div className="space-y-6">
-                                                <h4 className="font-black text-xs text-slate-400 uppercase tracking-widest px-4 flex items-center">
-                                                    <TrendingUp className="mr-2" size={14} />
-                                                    Action Roadmap (実行プラン)
+
+                                            {/* Sales Flow Section */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                    <Zap className="mr-2" size={12} />
+                                                    Strategic Sales Flow (成約導線設計)
                                                 </h4>
-                                                <div className="relative pl-8 border-l-2 border-indigo-100 ml-4 space-y-8 py-2">
-                                                    {data.m20Data.actionPlans.map((plan, i) => (
-                                                        <div key={i} className="relative">
-                                                            <div className="absolute -left-[41px] top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-indigo-500 border-4 border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-white z-10">
-                                                                {i + 1}
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    {data.m20Data.salesFlow.map((flow, i) => (
+                                                        <div key={i} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl relative overflow-hidden group hover:bg-white hover:shadow-lg transition-all">
+                                                            <div className="absolute top-0 right-0 p-2 text-slate-100 font-black text-6xl select-none leading-none group-hover:text-indigo-50 transition-colors">
+                                                                0{i + 1}
                                                             </div>
-                                                            <div className="flex items-center p-4 bg-white border border-slate-100 rounded-xl shadow-sm hover:shadow-md transition-all group ml-2">
-                                                                <div className="flex-1 font-bold text-slate-700">{plan.task}</div>
-                                                                <span className={cn(
-                                                                    "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter whitespace-nowrap ml-4",
-                                                                    plan.priority === "High" ? "bg-rose-100 text-rose-600" :
-                                                                        plan.priority === "Mid" ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-500"
-                                                                )}>
-                                                                    {plan.priority} Priority
-                                                                </span>
-                                                            </div>
-                                                            {i < data.m20Data!.actionPlans.length - 1 && (
-                                                                <div className="absolute left-[20px] top-full h-8 w-0.5 bg-indigo-100/0">
-                                                                    <div className="text-indigo-200 flex justify-center mt-1">
-                                                                        <ChevronDown size={16} strokeWidth={3} />
-                                                                    </div>
+                                                            <div className="relative z-10">
+                                                                <div className="text-xs font-black text-indigo-600 mb-1">{isEditing ? <input className="w-full bg-transparent border-b border-indigo-200" value={flow.step} onChange={(e) => updateM20('salesFlow', i, 'step', e.target.value)} /> : flow.step}</div>
+                                                                <div className="text-[10px] font-bold text-slate-400 uppercase mb-3">{isEditing ? <input className="w-full bg-transparent border-b border-slate-200" value={flow.purpose} onChange={(e) => updateM20('salesFlow', i, 'purpose', e.target.value)} /> : flow.purpose}</div>
+                                                                <div className="bg-white/80 rounded-xl p-3 border border-slate-200/50 text-sm font-medium text-slate-700 italic">
+                                                                    「{isEditing ? <textarea className="w-full bg-transparent border-none resize-none p-0 focus:ring-0" rows={2} value={flow.script} onChange={(e) => updateM20('salesFlow', i, 'script', e.target.value)} /> : flow.script}」
                                                                 </div>
-                                                            )}
+                                                            </div>
                                                         </div>
                                                     ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Action Plan Section */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                    <TrendingUp className="mr-2" size={12} />
+                                                    Critical Action Plan
+                                                </h4>
+                                                <div className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm">
+                                                    <table className="w-full text-left border-collapse">
+                                                        <thead>
+                                                            <tr className="bg-slate-50 border-b border-slate-100">
+                                                                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase">Deadline</th>
+                                                                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase">Task</th>
+                                                                <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase">Priority</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-100">
+                                                            {data.m20Data.actionPlans.map((plan, i) => (
+                                                                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                                                    <td className="px-6 py-4 text-xs font-bold text-slate-400 w-24">
+                                                                        {isEditing ? <input className="w-full bg-transparent border-b border-slate-200" value={plan.deadline} onChange={(e) => updateM20('actionPlans', i, 'deadline', e.target.value)} /> : plan.deadline}
+                                                                    </td>
+                                                                    <td className="px-6 py-4 text-sm font-bold text-slate-700 border-l border-slate-50">
+                                                                        {isEditing ? <input className="w-full bg-transparent border-b border-indigo-200" value={plan.task} onChange={(e) => updateM20('actionPlans', i, 'task', e.target.value)} /> : plan.task}
+                                                                    </td>
+                                                                    <td className="px-6 py-4">
+                                                                        {isEditing ? (
+                                                                            <select className="text-xs font-black uppercase tracking-tighter bg-slate-100 rounded px-2 py-1" value={plan.priority} onChange={(e) => updateM20('actionPlans', i, 'priority', e.target.value)}>
+                                                                                <option value="High">High</option>
+                                                                                <option value="Mid">Mid</option>
+                                                                                <option value="Low">Low</option>
+                                                                            </select>
+                                                                        ) : (
+                                                                            <span className={cn(
+                                                                                "px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter whitespace-nowrap",
+                                                                                plan.priority === "High" ? "bg-rose-100 text-rose-600" :
+                                                                                    plan.priority === "Mid" ? "bg-amber-100 text-amber-600" : "bg-slate-100 text-slate-500"
+                                                                            )}>{plan.priority}</span>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
                                                 </div>
                                             </div>
                                             <NextStepBox type="戦略案" />
                                         </div>
                                     )}
 
-                                    {/* M10/M11: Market Analysis (Data-Driven) */}
-                                    {(activeModule === "M10" || activeModule === "M11") && !data.m10Data && (
-                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <Globe size={48} className="text-blue-200 mb-4" />
-                                            <h3 className="text-lg font-bold text-slate-800 mb-2">市場・競合データの生成</h3>
-                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
-                                                「{data.theme || "事業構想"}」に関する<br />
-                                                市場規模、成長率、競合シェア等の詳細をAIが算出します。
-                                            </p>
-                                            <button
-                                                onClick={handleGenerateDetail}
-                                                className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 transition-all flex items-center"
-                                            >
-                                                <Zap className="mr-2" size={16} fill="currentColor" />
-                                                詳細データを生成する
-                                            </button>
-                                        </div>
-                                    )}
-                                    {(activeModule === "M10" || activeModule === "M11") && data.m10Data && (
-                                        <div className="space-y-6">
-                                            <div className="flex items-center space-x-3 mb-4">
-                                                <Globe className="text-blue-500" />
-                                                <span className="font-black text-sm uppercase tracking-widest">{data.theme || "事業"}の市場環境・競合分析 (Market Analysis)</span>
-                                            </div>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                                                <div className="h-32 bg-slate-50 rounded-3xl border border-slate-100 flex flex-col justify-end p-6 relative">
-                                                    <div className="absolute top-6 left-6 font-bold text-xs text-slate-400">市場成長率</div>
-                                                    {isEditing ? (
-                                                        <input className="font-black text-3xl text-slate-800 bg-transparent border-b border-slate-300 focus:outline-none w-full" value={data.m10Data.growthRate} onChange={(e) => updateM10('growthRate', -1, null, e.target.value)} />
-                                                    ) : (
-                                                        <div className="font-black text-3xl text-slate-800">{data.m10Data.growthRate}</div>
-                                                    )}
-                                                </div>
-                                                <div className="h-32 bg-slate-50 border border-slate-100 rounded-3xl p-6 relative flex flex-col justify-end">
-                                                    <div className="absolute top-6 left-6 font-bold text-xs text-slate-400">市場規模 (Est.)</div>
-                                                    {isEditing ? (
-                                                        <input className="font-black text-xl text-slate-800 leading-tight bg-transparent border-b border-slate-300 focus:outline-none w-full" value={data.m10Data.marketSize} onChange={(e) => updateM10('marketSize', -1, null, e.target.value)} />
-                                                    ) : (
-                                                        <div className="font-black text-xl text-slate-800 leading-tight">{data.m10Data.marketSize}</div>
-                                                    )}
-                                                </div>
-                                                <div className="h-32 bg-slate-50 border border-slate-100 rounded-3xl p-6 relative flex flex-col justify-end">
-                                                    <div className="absolute top-6 left-6 font-bold text-xs text-slate-400">Top Trend</div>
-                                                    <div className="font-bold text-sm text-blue-600 line-clamp-2">{data.m10Data.trends[0]}</div>
+                                    {/* M10: Market Environment & Intelligence */}
+                                    {activeModule === "M10" && data.m10Data && (
+                                        <div className="space-y-8">
+                                            {/* Macro Analysis (PEST/3C) */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                    <Globe className="mr-2" size={12} />
+                                                    Market intelligence (環境分析)
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {data.m10Data.marketAnalysis.map((item, i) => (
+                                                        <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[10px] font-black uppercase tracking-widest">
+                                                                    {isEditing ? <input className="bg-transparent border-none w-24" value={item.factor} onChange={(e) => updateM10('marketAnalysis', i, 'factor', e.target.value)} /> : item.factor}
+                                                                </span>
+                                                                <span className="text-[10px] text-slate-400 font-medium italic">Source: {isEditing ? <input className="bg-transparent border-none w-32" value={item.source} onChange={(e) => updateM10('marketAnalysis', i, 'source', e.target.value)} /> : item.source}</span>
+                                                            </div>
+                                                            <div className="text-sm font-bold text-slate-800 leading-relaxed">
+                                                                {isEditing ? <textarea className="w-full bg-transparent border-b border-blue-100 resize-none" rows={2} value={item.impact} onChange={(e) => updateM10('marketAnalysis', i, 'impact', e.target.value)} /> : item.impact}
+                                                            </div>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                <div className="p-6 border border-slate-100 rounded-3xl bg-slate-50/50">
-                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">主要競合分析 (Editable)</h5>
+
+                                            {/* Top Trends & Evidence */}
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                                <div className="space-y-4">
+                                                    <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                        <TrendingUp className="mr-2" size={12} />
+                                                        Current Growth Trends
+                                                    </h4>
+                                                    <div className="bg-slate-50 border border-slate-100 rounded-3xl p-6 space-y-6">
+                                                        {data.m10Data.trends.map((t, i) => (
+                                                            <div key={i} className="flex items-start space-x-4">
+                                                                <div className="text-2xl font-black text-blue-200">#{i + 1}</div>
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center justify-between mb-1">
+                                                                        <span className="text-base font-black text-slate-800">{isEditing ? <input className="bg-transparent border-b border-blue-200" value={t.keyword} onChange={(e) => updateM10('trends', i, 'keyword', e.target.value)} /> : t.keyword}</span>
+                                                                        <span className="text-xs font-black text-emerald-500">{isEditing ? <input className="bg-transparent border-none w-16 text-right" value={t.growth} onChange={(e) => updateM10('trends', i, 'growth', e.target.value)} /> : t.growth}</span>
+                                                                    </div>
+                                                                    <div className="text-[10px] font-bold text-blue-500 uppercase mb-2">Platform: {isEditing ? <input className="bg-transparent border-none w-24" value={t.platform} onChange={(e) => updateM10('trends', i, 'platform', e.target.value)} /> : t.platform}</div>
+                                                                    <div className="text-xs text-slate-600 leading-relaxed border-l-2 border-blue-100 pl-3">
+                                                                        {isEditing ? <textarea className="w-full bg-transparent border-none resize-none" rows={2} value={t.reasoning} onChange={(e) => updateM10('trends', i, 'reasoning', e.target.value)} /> : t.reasoning}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-4">
+                                                    <h4 className="font-black text-[10px] text-slate-400 uppercase tracking-widest px-4 flex items-center">
+                                                        <Search className="mr-2" size={12} />
+                                                        Competitor Benchmarks
+                                                    </h4>
                                                     <div className="space-y-4">
                                                         {data.m10Data.competitors.map((c, i) => (
-                                                            <div key={i} className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm">
-                                                                {isEditing ? (
-                                                                    <>
-                                                                        <input className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-1/2" value={c.name} onChange={(e) => updateM10('competitors', i, 'name', e.target.value)} />
-                                                                        <div className="flex items-center">
-                                                                            <span className="text-xs font-bold text-slate-400 mr-1">Share:</span>
-                                                                            <input className="text-xs font-bold text-slate-600 bg-transparent border-b border-slate-200 w-12" type="number" value={c.share} onChange={(e) => updateM10('competitors', i, 'share', e.target.value)} />
-                                                                            <span className="text-xs font-bold text-slate-400 ml-1">%</span>
+                                                            <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm group">
+                                                                <div className="flex items-center justify-between mb-4">
+                                                                    <div className="font-black text-slate-800">{isEditing ? <input className="bg-transparent border-b border-blue-200" value={c.name} onChange={(e) => updateM10('competitors', i, 'name', e.target.value)} /> : c.name}</div>
+                                                                    <div className="px-3 py-1 bg-slate-50 rounded-full text-[10px] font-black text-slate-400">SHARE: {isEditing ? <input className="bg-transparent border-none w-8 text-right" type="number" value={c.share} onChange={(e) => updateM10('competitors', i, 'share', Number(e.target.value))} /> : c.share}%</div>
+                                                                </div>
+                                                                <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Strength</span>
+                                                                        <div className="text-[11px] font-bold text-slate-700 bg-emerald-50 p-2 rounded-xl border border-emerald-100">
+                                                                            {isEditing ? <input className="bg-transparent border-none w-full" value={c.strength} onChange={(e) => updateM10('competitors', i, 'strength', e.target.value)} /> : c.strength}
                                                                         </div>
-                                                                    </>
-                                                                ) : (
-                                                                    <>
-                                                                        <div className="font-bold text-slate-700">{c.name}</div>
-                                                                        <div className="text-xs font-bold text-slate-400">Share: {c.share}%</div>
-                                                                    </>
-                                                                )}
+                                                                    </div>
+                                                                    <div className="space-y-1">
+                                                                        <span className="text-[9px] font-black text-slate-400 uppercase">Weakness</span>
+                                                                        <div className="text-[11px] font-bold text-slate-700 bg-rose-50 p-2 rounded-xl border border-rose-100">
+                                                                            {isEditing ? <input className="bg-transparent border-none w-full" value={c.weakness} onChange={(e) => updateM10('competitors', i, 'weakness', e.target.value)} /> : c.weakness}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                                <div className="p-3 bg-blue-600 rounded-2xl text-[11px] font-black text-white hover:bg-blue-700 transition-colors">
+                                                                    対抗戦略: {isEditing ? <input className="bg-transparent border-none w-full text-white placeholder:text-blue-300" value={c.strategy} onChange={(e) => updateM10('competitors', i, 'strategy', e.target.value)} /> : c.strategy}
+                                                                </div>
                                                             </div>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-50/50">
-                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">市場トレンド</h5>
-                                                    <div className="space-y-3">
-                                                        {data.m10Data.trends.map((t, i) => (
-                                                            <div key={i} className="flex items-start text-sm font-medium text-slate-700">
-                                                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-1.5 mr-3 flex-shrink-0" />
-                                                                {isEditing ? (
-                                                                    <input className="bg-transparent border-b border-slate-300 focus:outline-none w-full" value={t} onChange={(e) => updateM10('trends', i, null, e.target.value)} />
-                                                                ) : t}
+                                            </div>
+
+                                            {/* Evidence Links */}
+                                            <div className="p-6 bg-slate-900 rounded-[2.5rem] text-white overflow-hidden relative">
+                                                <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12">
+                                                    <Globe size={120} />
+                                                </div>
+                                                <h4 className="font-black text-[10px] text-blue-400 uppercase tracking-widest mb-6 relative z-10">Verification Evidence (根拠ソース)</h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                                                    {data.m10Data.evidence.map((ev, i) => (
+                                                        <a key={i} href={ev.url} target="_blank" rel="noopener noreferrer" className="flex items-center p-4 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all group">
+                                                            <div className="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center mr-4 group-hover:scale-110 transition-transform">
+                                                                <ExternalLink size={18} />
                                                             </div>
-                                                        ))}
-                                                    </div>
+                                                            <div>
+                                                                <div className="text-sm font-bold text-white mb-0.5">{ev.title}</div>
+                                                                <div className="text-[10px] font-black text-white/40 uppercase tracking-widest">{ev.date} Publication</div>
+                                                            </div>
+                                                        </a>
+                                                    ))}
                                                 </div>
                                             </div>
                                             <NextStepBox type="分析結果" />
@@ -1231,10 +1546,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
                                     {/* M12: Trend/Keywords (Data-Driven) */}
                                     {activeModule === "M12" && !data.m12Data && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <Globe size={64} className="text-orange-200 mb-6" />
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3">トレンド・キーワード分析の生成</h3>
-                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Globe size={56} className="text-orange-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">トレンド・キーワード分析の生成</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
                                                 現在の検索トレンドとSNSキーワードを解析し、<br />
                                                 「刺さる」発信のためのキーワード群を特定します。
                                             </p>
@@ -1248,34 +1563,42 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {activeModule === "M12" && data.m12Data && (
-                                        <div className="space-y-10">
-                                            <div className="flex items-center space-x-3 mb-4 text-orange-600">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-2 text-orange-600">
                                                 <TrendingUp />
-                                                <span className="font-black text-sm uppercase tracking-widest">Trending Keywords & Analysis</span>
+                                                <span className="font-black text-[10px] uppercase tracking-widest">Trending Keywords & Analysis</span>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                                 {data.m12Data.trendingKeywords.map((k, i) => (
                                                     <div key={i} className="p-6 bg-orange-50 rounded-3xl border border-orange-100 group hover:bg-white hover:shadow-xl transition-all">
                                                         <div className="flex justify-between items-start mb-4">
-                                                            <div className="px-2 py-1 bg-white rounded text-[10px] font-black text-orange-600 border border-orange-100">VOL: {k.volume}</div>
-                                                            <div className="text-emerald-500 font-bold text-xs">{k.growth}</div>
+                                                            <div className="px-2 py-1 bg-white rounded text-[10px] font-black text-orange-600 border border-orange-100">
+                                                                VOL: {isEditing ? <input className="w-12 bg-transparent border-b border-orange-200" value={k.volume} onChange={(e) => updateM12('trendingKeywords', i, 'volume', e.target.value)} /> : k.volume}
+                                                            </div>
+                                                            <div className="text-emerald-500 font-bold text-xs">
+                                                                {isEditing ? <input className="w-12 bg-transparent border-b border-orange-200 text-right" value={k.growth} onChange={(e) => updateM12('trendingKeywords', i, 'growth', e.target.value)} /> : k.growth}
+                                                            </div>
                                                         </div>
-                                                        <div className="text-lg font-black text-slate-800">{k.word}</div>
+                                                        <div className="text-lg font-black text-slate-800">
+                                                            {isEditing ? <input className="w-full bg-transparent border-b border-orange-300" value={k.word} onChange={(e) => updateM12('trendingKeywords', i, 'word', e.target.value)} /> : k.word}
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                                <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
                                                     <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">関連クエリ (Seed Keywords)</h5>
                                                     <div className="flex flex-wrap gap-2">
                                                         {data.m12Data.relatedQueries.map((q, i) => (
                                                             <span key={i} className="px-4 py-2 bg-white rounded-xl border border-slate-200 text-sm font-medium text-slate-600 shadow-sm">
-                                                                {q}
+                                                                {isEditing ? (
+                                                                    <input className="bg-transparent border-b border-slate-300 w-24" value={q} onChange={(e) => updateM12('relatedQueries', i, null, e.target.value)} />
+                                                                ) : q}
                                                             </span>
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm">
+                                                <div className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
                                                     <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">プラットフォーム別方針</h5>
                                                     <div className="space-y-6">
                                                         {data.m12Data.platformStrategy.map((s, i) => (
@@ -1283,9 +1606,13 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                                 <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center mr-4 flex-shrink-0 font-black text-xs">
                                                                     {s.platform[0]}
                                                                 </div>
-                                                                <div>
-                                                                    <div className="font-bold text-slate-800 text-sm mb-1">{s.platform}</div>
-                                                                    <div className="text-xs text-slate-500 leading-relaxed">{s.approach}</div>
+                                                                <div className="flex-1">
+                                                                    <div className="font-bold text-slate-800 text-sm mb-1">
+                                                                        {isEditing ? <input className="w-full bg-transparent border-b border-slate-200" value={s.platform} onChange={(e) => updateM12('platformStrategy', i, 'platform', e.target.value)} /> : s.platform}
+                                                                    </div>
+                                                                    <div className="text-xs text-slate-500 leading-relaxed">
+                                                                        {isEditing ? <textarea className="w-full bg-transparent border-b border-slate-200 resize-none" rows={2} value={s.approach} onChange={(e) => updateM12('platformStrategy', i, 'approach', e.target.value)} /> : s.approach}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -1298,10 +1625,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
                                     {/* M30/M31: Business & Finance (Data-Driven) */}
                                     {(activeModule === "M30" || activeModule === "M31") && !data.m30Data && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <TrendingUp size={64} className="text-emerald-200 mb-6" />
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3">事業計画・収益試算の生成</h3>
-                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <TrendingUp size={56} className="text-emerald-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">事業計画・収益試算の生成</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
                                                 {data.theme ? `「${data.theme}」の` : ""}実現に向けた<br />
                                                 5年間の収益予測とキャッシュフロー、<br />
                                                 マイルストーンを設計します。
@@ -1316,13 +1643,13 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {(activeModule === "M30" || activeModule === "M31") && data.m30Data && (
-                                        <div className="space-y-10">
-                                            <div className="flex items-center space-x-3 mb-8 text-emerald-600">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-4 text-emerald-600">
                                                 <TrendingUp />
-                                                <span className="font-black text-sm uppercase tracking-widest">Business Plan & Financial Structure</span>
+                                                <span className="font-black text-[10px] uppercase tracking-widest">Business Plan & Financial Structure</span>
                                             </div>
                                             {/* M30: Business Plan (Simulation) */}
-                                            <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] relative overflow-hidden">
+                                            <div className="bg-slate-900 text-white p-6 rounded-3xl relative overflow-hidden">
                                                 <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-12 relative z-10 gap-6">
                                                     <div className="flex items-center space-x-4">
                                                         <div className="p-3 bg-emerald-500/20 rounded-xl">
@@ -1426,7 +1753,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                             <div key={i} className="flex flex-col text-sm border-l-2 border-slate-200 pl-4 py-1">
                                                                 {isEditing ? (
                                                                     <>
-                                                                        <input className="text-xs text-slate-400 font-bold bg-transparent border-b border-slate-300 w-full mb-1" value={m.date} onChange={(e) => updateM30('milestones', i, 'date', e.target.value)} />
+                                                                        <div className="flex gap-2">
+                                                                            <input className="text-xs text-slate-400 font-bold bg-transparent border-b border-slate-300 w-24 mb-1" value={m.date} onChange={(e) => updateM30('milestones', i, 'date', e.target.value)} />
+                                                                            <input className="text-xs text-slate-400 font-bold bg-transparent border-b border-slate-300 w-full mb-1" value={m.phase} onChange={(e) => updateM30('milestones', i, 'phase', e.target.value)} />
+                                                                        </div>
                                                                         <input className="font-bold text-slate-700 bg-transparent border-b border-slate-300 w-full" value={m.event} onChange={(e) => updateM30('milestones', i, 'event', e.target.value)} />
                                                                     </>
                                                                 ) : (
@@ -1439,17 +1769,29 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         ))}
                                                     </div>
                                                 </div>
-                                                <div className="p-8 bg-slate-900 text-white rounded-[2.5rem]">
-                                                    <h5 className="font-bold mb-4 text-xs text-slate-400">資金調達ニーズ</h5>
-                                                    {isEditing ? (
-                                                        <textarea
-                                                            className="w-full h-full bg-transparent text-sm font-medium leading-relaxed opacity-90 border border-slate-700 rounded p-2 focus:outline-none"
-                                                            value={data.m30Data.fundingNeeds}
-                                                            onChange={(e) => updateM30('fundingNeeds', -1, null, e.target.value)}
-                                                        />
-                                                    ) : (
-                                                        <div className="text-sm font-medium leading-relaxed opacity-90">{data.m30Data.fundingNeeds}</div>
-                                                    )}
+                                                <div className="p-6 bg-slate-900 text-white rounded-3xl">
+                                                    <h5 className="font-bold mb-4 text-xs text-slate-400">資金調達・財務サマリー</h5>
+                                                    <div className="space-y-4">
+                                                        {data.m30Data.fundingPlan.map((f, i) => (
+                                                            <div key={i} className="p-4 bg-white/5 rounded-xl border border-white/10">
+                                                                {isEditing ? (
+                                                                    <div className="grid grid-cols-2 gap-2">
+                                                                        <input className="bg-transparent border-b border-white/20 text-emerald-400 font-bold" value={f.method} onChange={(e) => updateM30('fundingPlan', i, 'method', e.target.value)} />
+                                                                        <input className="bg-transparent border-b border-white/20 text-right" value={f.amount} onChange={(e) => updateM30('fundingPlan', i, 'amount', e.target.value)} />
+                                                                        <input className="col-span-2 bg-transparent border-b border-white/20 text-xs opacity-60" value={f.institutionalSupport} onChange={(e) => updateM30('fundingPlan', i, 'institutionalSupport', e.target.value)} />
+                                                                    </div>
+                                                                ) : (
+                                                                    <>
+                                                                        <div className="flex justify-between items-center mb-1">
+                                                                            <span className="text-emerald-400 font-bold">{f.method}</span>
+                                                                            <span className="font-mono">{f.amount}</span>
+                                                                        </div>
+                                                                        <div className="text-[10px] opacity-60 italic">{f.institutionalSupport}</div>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <NextStepBox type="計画案" />
@@ -1458,10 +1800,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
                                     {/* M40: Operation (Data-Driven) */}
                                     {activeModule === "M40" && !data.m40Data && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <Cpu size={64} className="text-amber-200 mb-6" />
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3">業務プロセス・体制の最適化</h3>
-                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Cpu size={56} className="text-amber-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">業務プロセス・体制の最適化</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
                                                 {data.theme ? `「${data.theme}」の` : ""}運営に必要な<br />
                                                 業務フローの構築とボトルネックの解消、<br />
                                                 効率的な体制図を提案します。
@@ -1476,19 +1818,19 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {activeModule === "M40" && data.m40Data && (
-                                        <div className="space-y-8">
-                                            <div className="flex items-center space-x-3 mb-8 text-amber-600">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-2 text-amber-600">
                                                 <Cpu />
-                                                <span className="font-black text-sm uppercase tracking-widest">オペレーション最適化 (Operation)</span>
+                                                <span className="font-black text-[10px] uppercase tracking-widest">オペレーション最適化 (Operation)</span>
                                             </div>
                                             <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
                                                 <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">現状のボトルネック</h5>
                                                 <div className="space-y-3">
-                                                    {data.m40Data.bottlenecks.map((b, i) => (
+                                                    {data.m40Data.currentBottlenecks.map((b, i) => (
                                                         <div key={i} className="flex items-center space-x-3 p-4 bg-white rounded-xl border border-red-100">
                                                             <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
                                                             {isEditing ? (
-                                                                <input className="font-medium text-slate-700 w-full bg-transparent border-b border-slate-200" value={b} onChange={(e) => updateM40('bottlenecks', i, e.target.value)} />
+                                                                <input className="font-medium text-slate-700 w-full bg-transparent border-b border-slate-200" value={b} onChange={(e) => updateM40('currentBottlenecks', i, null, e.target.value)} />
                                                             ) : (
                                                                 <span className="font-medium text-slate-700">{b}</span>
                                                             )}
@@ -1496,17 +1838,25 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div className="p-8 bg-blue-50/50 rounded-[2.5rem] border border-blue-100">
-                                                <h5 className="font-bold mb-6 text-sm text-blue-500 uppercase">改善プラン</h5>
-                                                <div className="space-y-3">
-                                                    {data.m40Data.improvementPlan.map((p, i) => (
-                                                        <div key={i} className="flex items-center space-x-3">
-                                                            <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">{i + 1}</div>
-                                                            {isEditing ? (
-                                                                <input className="font-bold text-slate-700 w-full bg-transparent border-b border-blue-200" value={p} onChange={(e) => updateM40('improvementPlan', i, e.target.value)} />
-                                                            ) : (
-                                                                <span className="font-bold text-slate-700">{p}</span>
-                                                            )}
+                                            <div className="p-6 bg-blue-50/50 rounded-3xl border border-blue-100">
+                                                <h5 className="font-bold mb-6 text-sm text-blue-500 uppercase">業務改善フロー</h5>
+                                                <div className="space-y-4">
+                                                    {data.m40Data.improvementFlow.map((f, i) => (
+                                                        <div key={i} className="p-4 bg-white rounded-2xl border border-blue-50 shadow-sm">
+                                                            <div className="grid grid-cols-2 gap-4">
+                                                                <div className="space-y-1">
+                                                                    <div className="text-[10px] uppercase font-black text-slate-400">Before (課題)</div>
+                                                                    {isEditing ? <input className="w-full border-b border-slate-200 text-sm" value={f.before} onChange={(e) => updateM40('improvementFlow', i, 'before', e.target.value)} /> : <div className="text-sm text-slate-600 italic">{f.before}</div>}
+                                                                </div>
+                                                                <div className="space-y-1">
+                                                                    <div className="text-[10px] uppercase font-black text-emerald-500">After (改善後)</div>
+                                                                    {isEditing ? <input className="w-full border-b border-emerald-200 text-sm font-bold" value={f.after} onChange={(e) => updateM40('improvementFlow', i, 'after', e.target.value)} /> : <div className="text-sm font-bold text-slate-800">{f.after}</div>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="mt-3 flex items-center space-x-2">
+                                                                <div className="px-2 py-0.5 bg-blue-100 text-blue-600 rounded text-[9px] font-black uppercase tracking-tighter">Tool</div>
+                                                                {isEditing ? <input className="bg-transparent text-xs font-bold w-full" value={f.tool} onChange={(e) => updateM40('improvementFlow', i, 'tool', e.target.value)} /> : <div className="text-xs font-bold text-blue-500">{f.tool}</div>}
+                                                            </div>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1516,12 +1866,13 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
                                     {/* M50: SNS/Content (Data-Driven) */}
                                     {activeModule === "M50" && !data.m50Data && (
-                                        <div className="flex flex-col items-center justify-center py-20 text-center opacity-80 animate-in fade-in zoom-in duration-300">
-                                            <Smartphone size={64} className="text-pink-200 mb-6" />
-                                            <h3 className="text-xl font-bold text-slate-800 mb-3">SNS・コンテンツ戦略の生成</h3>
-                                            <p className="text-slate-500 mb-8 max-w-sm mx-auto leading-relaxed">
+                                        <div className="flex flex-col items-center justify-center py-12 text-center opacity-80 animate-in fade-in zoom-in duration-300">
+                                            <Smartphone size={56} className="text-pink-200 mb-4" />
+                                            <h3 className="text-lg font-bold text-slate-800 mb-2">SNS・コンテンツ戦略の生成</h3>
+                                            <p className="text-sm text-slate-500 mb-6 max-w-sm mx-auto leading-relaxed">
                                                 {data.theme ? `「${data.theme}」の` : ""}認知拡大とファン獲得に向けた<br />
-                                                具体的な発信テーマや目標KPIを推定します。
+                                                具体的な発信テーマや目標KPI、<br />
+                                                LINEマーケティング戦略を策定します。
                                             </p>
                                             <button
                                                 onClick={handleGenerateDetail}
@@ -1533,44 +1884,100 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {activeModule === "M50" && data.m50Data && (
-                                        <div className="space-y-8">
-                                            <div className="flex items-center space-x-3 mb-8 text-pink-600">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-2 text-pink-600">
                                                 <Smartphone />
-                                                <span className="font-black text-sm uppercase tracking-widest">コンテンツ・SNS戦略 (Marketing)</span>
+                                                <span className="font-black text-[10px] uppercase tracking-widest">Contents & LINE Marketing Strategy</span>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-6 relative">
-                                                <div className="absolute -top-6 right-0 text-[10px] text-slate-400 font-bold flex items-center bg-slate-50 px-2 py-1 rounded-lg">
-                                                    <LightbulbIcon size={10} className="mr-1" /> AI推定値 (初期目標)
-                                                </div>
-                                                {data.m50Data.kpis.map((k, i) => (
-                                                    <div key={i} className="p-6 bg-pink-50 rounded-3xl border border-pink-100 text-center">
-                                                        {isEditing ? (
-                                                            <>
-                                                                <input className="text-xs font-bold text-pink-400 mb-2 bg-transparent border-b border-pink-200 w-full text-center" value={k.metric} onChange={(e) => updateM50('kpis', i, 'metric', e.target.value)} />
-                                                                <input className="text-xl font-black text-pink-600 bg-transparent border-b border-pink-200 w-full text-center" value={k.target} onChange={(e) => updateM50('kpis', i, 'target', e.target.value)} />
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className="text-xs font-bold text-pink-400 mb-2">{k.metric}</div>
-                                                                <div className="text-xl font-black text-pink-600">{k.target}</div>
-                                                            </>
-                                                        )}
+
+                                            {/* Brand Theme / Topics */}
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-6 border-b border-slate-100">
+                                                <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm relative overflow-hidden group">
+                                                    <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase tracking-widest flex items-center">
+                                                        <MessageSquare size={16} className="mr-2" /> Brand Topics
+                                                    </h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {data.m50Data.contentThemes.map((t, i) => (
+                                                            <div key={i} className="px-3 py-1.5 bg-slate-50 rounded-xl text-xs font-bold border border-slate-100 text-slate-700 group-hover:bg-slate-900 group-hover:text-white transition-all">
+                                                                {isEditing ? <input className="bg-transparent border-none w-20" value={t} onChange={(e) => updateM50('contentThemes', i, null, e.target.value)} /> : `# ${t}`}
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
-                                            </div>
-                                            <div className="p-8 bg-white rounded-[2.5rem] border border-slate-100">
-                                                <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase">推奨コンテンツテーマ</h5>
-                                                <div className="flex flex-wrap gap-3">
-                                                    {data.m50Data.themes.map((t, i) => (
-                                                        <span key={i} className="px-4 py-2 bg-slate-50 text-slate-700 font-bold rounded-xl border border-slate-200">
-                                                            {isEditing ? (
-                                                                <input className="bg-transparent border-b border-slate-300 w-24" value={t} onChange={(e) => updateM50('themes', i, null, e.target.value)} />
-                                                            ) : `# ${t}`}
-                                                        </span>
-                                                    ))}
+                                                </div>
+                                                <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] shadow-xl relative overflow-hidden">
+                                                    <h5 className="font-bold mb-6 text-xs text-slate-400 uppercase tracking-widest">Keywords</h5>
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {data.m50Data.headlines.map((h, i) => (
+                                                            <span key={i} className="px-3 py-1 bg-white/10 rounded-lg text-[10px] font-black uppercase tracking-tighter border border-white/5">{h}</span>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <NextStepBox type="テーマ案" />
+
+                                            {/* LINE Marketing Flow (NEW) */}
+                                            <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[3rem] space-y-8 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                                                    <MessageCircle size={80} className="text-emerald-500" />
+                                                </div>
+                                                <div className="flex items-center space-x-3">
+                                                    <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center">
+                                                        <Zap size={20} />
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-lg font-black text-emerald-900">公式LINEマーケティング・フロー</h4>
+                                                        <p className="text-xs text-emerald-600/70 font-bold uppercase tracking-widest">Automation & Conversion Funnel</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                                    {/* Step Messages */}
+                                                    <div className="lg:col-span-2 space-y-4">
+                                                        <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Step Messages (教育配信)</h5>
+                                                        <div className="space-y-3">
+                                                            {data.m50Data.lineMarketing?.stepMessages.map((m, i) => (
+                                                                <div key={i} className="bg-white p-5 rounded-2xl border border-emerald-100 shadow-sm relative">
+                                                                    <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded-full" />
+                                                                    <div className="flex justify-between items-start mb-2">
+                                                                        <div className="text-[10px] font-black text-emerald-500 uppercase">Day {m.day}</div>
+                                                                        <div className="text-xs font-black text-slate-800">{m.title}</div>
+                                                                    </div>
+                                                                    <p className="text-[11px] text-slate-500 leading-relaxed italic">{m.content}</p>
+                                                                </div>
+                                                            )) || <div className="text-[10px] text-emerald-300 italic font-medium p-4 border border-dashed border-emerald-200 rounded-2xl">教育配信(5日間)を未生成</div>}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Tag Design */}
+                                                    <div className="space-y-4">
+                                                        <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Segmentation (タグ設計)</h5>
+                                                        <div className="space-y-2">
+                                                            {data.m50Data.lineMarketing?.tagDesign.map((tag, i) => (
+                                                                <div key={i} className="bg-emerald-500/10 p-4 rounded-xl border border-emerald-200">
+                                                                    <div className="text-xs font-black text-emerald-700 flex items-center">
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2" />
+                                                                        {tag.name}
+                                                                    </div>
+                                                                    <div className="text-[9px] text-emerald-600 font-bold mt-1">{tag.meaning}</div>
+                                                                </div>
+                                                            )) || <div className="text-[10px] text-emerald-300 italic">タグ設計を未生成</div>}
+                                                        </div>
+
+                                                        {/* KPI & Conversion */}
+                                                        <div className="mt-8 pt-8 border-t border-emerald-200">
+                                                            <h5 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Target KPIs</h5>
+                                                            <div className="space-y-3">
+                                                                {data.m50Data.lineMarketing?.kpiTargets.map((k, i) => (
+                                                                    <div key={i} className="flex justify-between items-center text-xs">
+                                                                        <span className="font-bold text-emerald-900/60">{k.metric}</span>
+                                                                        <span className="font-mono font-black text-emerald-700">{k.target}</span>
+                                                                    </div>
+                                                                )) || <div className="text-[10px] text-emerald-300 italic">KPI指標を未生成</div>}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <NextStepBox type="ブランド構成" />
                                         </div>
                                     )}
 
@@ -1638,82 +2045,138 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                         </div>
                                     )}
                                     {(activeModule === "M60" || activeModule === "M61") && data.m60Data && (
-                                        <div className="space-y-8">
-                                            <div className="flex items-center space-x-3 mb-8 text-indigo-600">
+                                        <div className="space-y-6">
+                                            <div className="flex items-center space-x-3 mb-4 text-indigo-600">
                                                 <Smartphone />
-                                                <span className="font-black text-sm uppercase tracking-widest">App Development & Scale</span>
-                                            </div>
-                                            <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-[2.5rem] relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-100 rounded-full -translate-y-1/2 translate-x-1/2 opacity-50" />
-                                                <h5 className="font-bold mb-4 text-xs text-indigo-400 tracking-widest uppercase">Concept Definition</h5>
-                                                {isEditing ? (
-                                                    <textarea
-                                                        className="w-full h-24 bg-transparent text-2xl font-black text-indigo-900 leading-snug border-b border-indigo-200 focus:outline-none resize-none"
-                                                        value={data.m60Data.concept}
-                                                        onChange={(e) => updateM60('concept', -1, e.target.value)}
-                                                    />
-                                                ) : (
-                                                    <div className="text-2xl font-black text-indigo-900 leading-snug relative z-10">
-                                                        {data.m60Data.concept}
-                                                    </div>
-                                                )}
+                                                <span className="font-black text-[10px] uppercase tracking-widest">System Specification & Architecture</span>
                                             </div>
 
-                                        </div>
-                                    )}
-
-
-
-                                    {activeModule === "M60" && data.m60Data && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-white shadow-sm">
-                                                <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
-                                                    <Layers size={16} className="mr-2" /> Key Features
-                                                </h5>
-                                                <div className="space-y-4">
-                                                    {data.m60Data.features.map((f, i) => (
-                                                        <div key={i} className="flex items-center space-x-3 group">
-                                                            <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                                                F{i + 1}
+                                            {/* System Definition */}
+                                            {data.m60Data.systemDefinition && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-3xl">
+                                                        <h5 className="font-bold mb-4 text-xs text-indigo-400 tracking-widest uppercase">System Definition</h5>
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-indigo-300 uppercase">Project Name</div>
+                                                                {isEditing ? <input className="w-full bg-transparent border-b border-indigo-200 text-lg font-black" value={data.m60Data.systemDefinition.name} onChange={(e) => updateM60('systemDefinition', -1, 'name', e.target.value)} /> : <div className="text-lg font-black text-indigo-900">{data.m60Data.systemDefinition.name}</div>}
                                                             </div>
-                                                            {isEditing ? (
-                                                                <input
-                                                                    className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full"
-                                                                    value={f}
-                                                                    onChange={(e) => updateM60('features', i, e.target.value)}
-                                                                />
-                                                            ) : (
-                                                                <div className="font-bold text-slate-700">{f}</div>
-                                                            )}
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-indigo-300 uppercase">Primary Goal</div>
+                                                                {isEditing ? <textarea className="w-full bg-transparent border-b border-indigo-200 text-sm" value={data.m60Data.systemDefinition.purpose} onChange={(e) => updateM60('systemDefinition', -1, 'purpose', e.target.value)} /> : <div className="text-sm text-indigo-800 font-medium">{data.m60Data.systemDefinition.purpose}</div>}
+                                                            </div>
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                    <div className="p-8 bg-slate-50 border border-slate-100 rounded-3xl">
+                                                        <h5 className="font-bold mb-4 text-xs text-slate-400 tracking-widest uppercase">Target & Context</h5>
+                                                        <div className="space-y-4">
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-slate-300 uppercase">Assumed User</div>
+                                                                {isEditing ? <input className="w-full bg-transparent border-b border-slate-200 text-sm font-bold" value={data.m60Data.systemDefinition.targetUser} onChange={(e) => updateM60('systemDefinition', -1, 'targetUser', e.target.value)} /> : <div className="text-sm text-slate-700 font-black">{data.m60Data.systemDefinition.targetUser}</div>}
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-slate-300 uppercase">Success Metric</div>
+                                                                <div className="text-sm text-slate-700 font-bold">{data.m60Data.systemDefinition.successDefinition}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className="p-6 border border-slate-100 rounded-3xl bg-white shadow-sm">
+                                                    <h5 className="font-bold mb-6 text-sm text-slate-500 uppercase flex items-center">
+                                                        <Layers size={16} className="mr-2" /> Key Features
+                                                    </h5>
+                                                    <div className="space-y-4">
+                                                        {data.m60Data.features.map((f, i) => (
+                                                            <div key={i} className="flex items-start space-x-3 group">
+                                                                <div className="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-[10px] font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors mt-1">
+                                                                    F{i + 1}
+                                                                </div>
+                                                                <div className="flex-1">
+                                                                    {isEditing ? <input className="font-bold text-slate-700 bg-transparent border-b border-slate-200 w-full mb-1" value={f.name} onChange={(e) => updateM60('features', i, 'name', e.target.value)} /> : <div className="font-bold text-slate-700">{f.name}</div>}
+                                                                    <div className="text-[10px] text-slate-400 font-medium">{f.description}</div>
+                                                                </div>
+                                                                <div className="px-2 py-0.5 bg-slate-100 text-[10px] font-black rounded uppercase text-slate-400">{f.priority}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-6 border border-slate-100 rounded-3xl bg-slate-900 text-white shadow-sm">
+                                                    <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
+                                                        <Code size={16} className="mr-2" /> Tech Stack Strategy
+                                                    </h5>
+                                                    <div className="space-y-3">
+                                                        {data.m60Data.techStack.map((t, i) => (
+                                                            <div key={i} className="py-2 border-b border-slate-800">
+                                                                <div className="flex items-center space-x-2 mb-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                                    <div className="text-[10px] font-black text-slate-500 uppercase">{t.category}</div>
+                                                                </div>
+                                                                {isEditing ? <input className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full" value={t.selection} onChange={(e) => updateM60('techStack', i, 'selection', e.target.value)} /> : <div className="font-mono text-sm text-emerald-400">{t.selection}</div>}
+                                                                <div className="text-[10px] text-slate-500 italic mt-1">{t.reason}</div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            <div className="p-8 border border-slate-100 rounded-[2.5rem] bg-slate-900 text-white shadow-sm">
-                                                <h5 className="font-bold mb-6 text-sm text-slate-400 uppercase flex items-center">
-                                                    <Code size={16} className="mr-2" /> Tech Stack Strategy
-                                                </h5>
-                                                <div className="space-y-3">
-                                                    {data.m60Data.techStack.map((t, i) => (
-                                                        <div key={i} className="flex items-center space-x-3 py-2 border-b border-slate-800">
-                                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                                            {isEditing ? (
-                                                                <input
-                                                                    className="font-mono text-sm text-emerald-400 bg-transparent focus:outline-none w-full"
-                                                                    value={t}
-                                                                    onChange={(e) => updateM60('techStack', i, e.target.value)}
-                                                                />
-                                                            ) : (
-                                                                <div className="font-mono text-sm text-emerald-400">{t}</div>
-                                                            )}
+                                            {/* DB & Security (M61 Focus) */}
+                                            {activeModule === "M61" && (
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                    <div className="p-8 bg-slate-50 rounded-3xl border border-slate-100">
+                                                        <h5 className="font-bold mb-6 text-xs text-slate-400 uppercase tracking-widest flex items-center">
+                                                            <Database size={16} className="mr-2" /> Data Architecture
+                                                        </h5>
+                                                        <div className="space-y-4">
+                                                            {data.m60Data.dbSchema?.map((table, i) => (
+                                                                <div key={i} className="bg-white p-4 rounded-2xl border border-slate-200">
+                                                                    <div className="text-sm font-black text-slate-800 mb-2 flex items-center">
+                                                                        <Table size={14} className="mr-1 text-indigo-400" /> {table.table}
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-1">
+                                                                        {table.columns.map((col, ci) => (
+                                                                            <span key={ci} className="px-2 py-0.5 bg-slate-100 rounded text-[9px] font-bold text-slate-500 border border-slate-200">
+                                                                                {col.name} <span className="opacity-40">({col.type})</span>
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                    <div className="p-8 bg-slate-900 text-white rounded-3xl shadow-xl">
+                                                        <h5 className="font-bold mb-6 text-xs text-slate-500 uppercase tracking-widest flex items-center">
+                                                            <ShieldCheck size={16} className="mr-2" /> Security & Governance
+                                                        </h5>
+                                                        <div className="space-y-6">
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-slate-500 uppercase mb-2">Access Roles</div>
+                                                                <div className="flex flex-wrap gap-2">
+                                                                    {data.m60Data.security?.roles.map((r, i) => (
+                                                                        <span key={i} className="px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-xs font-bold text-indigo-300">{r}</span>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] font-black text-slate-500 uppercase mb-2">Security Measures</div>
+                                                                <div className="space-y-2">
+                                                                    {data.m60Data.security?.measures.map((m, i) => (
+                                                                        <div key={i} className="flex items-center space-x-2 text-xs font-medium text-slate-300">
+                                                                            <CheckCircle2 size={12} className="text-emerald-500" />
+                                                                            <span>{m}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
 
-
-                                            <NextStepBox type="技術構成" />
+                                            <NextStepBox type="システム構成" />
                                         </div>
                                     )}
 
@@ -1745,7 +2208,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     </div>
                                                 ))}
                                             </div>
-                                            <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
+                                            <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl">
                                                 <h4 className="font-bold mb-6 text-slate-700">Assumptions & Parameters</h4>
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4">
                                                     {data.m91Data.parameters.map((p, i) => (
@@ -1753,7 +2216,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                             <span className="text-sm font-medium text-slate-500">{p.name}</span>
                                                             <div className="flex items-center">
                                                                 {isEditing ? (
-                                                                    <input className="text-right font-mono font-bold text-slate-800 bg-white border border-slate-200 px-2 rounded w-32" defaultValue={p.value} />
+                                                                    <input className="text-right font-mono font-bold text-slate-800 bg-white border border-slate-200 px-2 rounded w-32" value={p.value} onChange={(e) => updateM91('parameters', i, null, e.target.value)} />
                                                                 ) : (
                                                                     <span className="font-mono font-bold text-slate-800">{p.value}</span>
                                                                 )}
@@ -1790,7 +2253,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
 
                                     {/* M99 Custom Module View */}
                                     {activeModule === "M99" && data.m99Data && (
-                                        <div className="bg-white p-8 md:p-12 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                                        <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-sm">
                                             <div className="mb-10 border-b border-slate-100 pb-8">
                                                 <div className="flex items-center space-x-4 mb-4">
                                                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center">
@@ -1806,11 +2269,18 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                             {/* Theme Input */}
                                             <div className="mb-8">
                                                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Analysis Theme (分析テーマ)</label>
-                                                <input
-                                                    className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl font-bold text-lg text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300"
-                                                    placeholder="例：競合他社の採用戦略、特定地域の法規制リスクなど"
-                                                    defaultValue={data.m99Data.overview !== "カスタムモジュールの分析結果" ? data.m99Data.overview : ""}
-                                                />
+                                                {isEditing ? (
+                                                    <input
+                                                        className="w-full p-5 bg-slate-50 border border-indigo-200 rounded-2xl font-bold text-lg text-slate-800 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all placeholder:text-slate-300"
+                                                        placeholder="例：競合他社の採用戦略、特定地域の法規制リスクなど"
+                                                        value={data.m99Data.overview}
+                                                        onChange={(e) => updateM99('overview', -1, e.target.value)}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-lg text-slate-800">
+                                                        {data.m99Data.overview}
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* Editable List */}
@@ -1821,11 +2291,18 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         <div className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 group-focus-within:bg-indigo-600 group-focus-within:text-white flex items-center justify-center mr-4 flex-shrink-0 font-bold transition-colors mt-4">
                                                             {i + 1}
                                                         </div>
-                                                        <textarea
-                                                            className="w-full p-5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-700 min-h-[120px] focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all leading-relaxed"
-                                                            defaultValue={d.includes("ユーザー定義") ? "" : d}
-                                                            placeholder={`考察・分析結果・アクションプラン ${i + 1}`}
-                                                        />
+                                                        {isEditing ? (
+                                                            <textarea
+                                                                className="w-full p-5 bg-slate-50 border border-indigo-200 rounded-2xl text-slate-700 min-h-[120px] focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 outline-none resize-none transition-all leading-relaxed"
+                                                                value={d}
+                                                                onChange={(e) => updateM99('details', i, e.target.value)}
+                                                                placeholder={`考察・分析結果・アクションプラン ${i + 1}`}
+                                                            />
+                                                        ) : (
+                                                            <div className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 min-h-[120px] leading-relaxed">
+                                                                <MarkdownText text={d} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
@@ -1884,10 +2361,16 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                             <div className="absolute top-0 right-0 w-16 h-16 bg-slate-50 rounded-bl-full flex items-center justify-center text-slate-200 font-black text-2xl group-hover:text-indigo-100 transition-colors">
                                                                 {i + 1}
                                                             </div>
-                                                            <div className="text-[10px] font-black tracking-widest text-indigo-500 uppercase mb-2">{s.section}</div>
-                                                            <div className="font-bold text-slate-800 mb-3">{s.content}</div>
+                                                            <div className="text-[10px] font-black tracking-widest text-indigo-500 uppercase mb-2">
+                                                                {isEditing ? <input className="bg-transparent border-b border-indigo-200 w-full" value={s.section} onChange={(e) => updateM21('seminarStructure', i, 'section', e.target.value)} /> : s.section}
+                                                            </div>
+                                                            <div className="font-bold text-slate-800 mb-3">
+                                                                {isEditing ? <input className="bg-transparent border-b border-indigo-200 w-full" value={s.content} onChange={(e) => updateM21('seminarStructure', i, 'content', e.target.value)} /> : s.content}
+                                                            </div>
                                                             <div className="p-4 bg-slate-50 rounded-2xl text-[13px] text-slate-600 border border-slate-100 italic leading-relaxed">
-                                                                「{s.keyTalk}」
+                                                                {isEditing ? (
+                                                                    <textarea className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-600 italic resize-none" rows={2} value={s.keyTalk} onChange={(e) => updateM21('seminarStructure', i, 'keyTalk', e.target.value)} />
+                                                                ) : `「${s.keyTalk}」`}
                                                             </div>
                                                         </div>
                                                     ))}
@@ -1906,15 +2389,19 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                                 <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center justify-center font-bold text-sm group-hover:bg-emerald-600 group-hover:text-white transition-all">
                                                                     {i + 1}
                                                                 </div>
-                                                                {i < data.m21Data!.sessionFlow.length - 2 && <div className="w-0.5 flex-1 bg-emerald-50 group-hover:bg-emerald-100 mt-1" />}
+                                                                {i < data.m21Data!.sessionFlow.length - 1 && <div className="w-0.5 flex-1 bg-emerald-50 group-hover:bg-emerald-100 mt-1" />}
                                                             </div>
                                                             <div className="flex-1 pb-4">
                                                                 <div className="font-bold text-slate-800 flex items-center">
-                                                                    {f.phase}
-                                                                    <span className="ml-3 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-tighter">{f.purpose}</span>
+                                                                    {isEditing ? <input className="bg-transparent border-b border-emerald-200 w-1/3" value={f.phase} onChange={(e) => updateM21('sessionFlow', i, 'phase', e.target.value)} /> : f.phase}
+                                                                    <span className="ml-3 text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded uppercase tracking-tighter">
+                                                                        {isEditing ? <input className="bg-transparent border-none w-24 text-center focus:ring-0" value={f.purpose} onChange={(e) => updateM21('sessionFlow', i, 'purpose', e.target.value)} /> : f.purpose}
+                                                                    </span>
                                                                 </div>
                                                                 <div className="mt-2 p-4 bg-emerald-50/30 rounded-2xl border border-emerald-100/50 text-xs text-slate-600">
-                                                                    <MarkdownText text={f.script} />
+                                                                    {isEditing ? (
+                                                                        <textarea className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-600 resize-none h-auto" rows={3} value={f.script} onChange={(e) => updateM21('sessionFlow', i, 'script', e.target.value)} />
+                                                                    ) : <MarkdownText text={f.script} />}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1922,7 +2409,7 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                 </div>
                                             </div>
 
-                                            <div className="p-8 bg-slate-900 text-white rounded-[2.5rem] shadow-xl overflow-hidden relative">
+                                            <div className="p-6 bg-slate-900 text-white rounded-3xl shadow-xl overflow-hidden relative">
                                                 <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none rotate-12">
                                                     <CheckCircle2 size={120} />
                                                 </div>
@@ -1931,7 +2418,9 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                     クロージング戦略 (Closing Strategy)
                                                 </h3>
                                                 <p className="text-slate-300 leading-relaxed font-medium italic">
-                                                    「{data.m21Data.closingStrategy}」
+                                                    {isEditing ? (
+                                                        <textarea className="w-full bg-transparent border-b border-slate-700 focus:outline-none text-slate-100 p-2 resize-none" rows={2} value={data.m21Data.closingStrategy} onChange={(e) => updateM21('closingStrategy', -1, null, e.target.value)} />
+                                                    ) : `「${data.m21Data.closingStrategy}」`}
                                                 </p>
                                             </div>
                                             <NextStepBox type="設計案" />
@@ -1970,15 +2459,21 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         <div className="space-y-6">
                                                             <div>
                                                                 <div className="text-[10px] font-black text-indigo-500 mb-1">TARGET ペルソナ</div>
-                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.target}</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">
+                                                                    {isEditing ? <input className="w-full bg-transparent border-b border-indigo-200" value={data.m51Data.brief.target} onChange={(e) => updateM51('brief', -1, 'target', e.target.value)} /> : data.m51Data.brief.target}
+                                                                </div>
                                                             </div>
                                                             <div>
                                                                 <div className="text-[10px] font-black text-indigo-500 mb-1">USP 独自の強み</div>
-                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.usp}</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">
+                                                                    {isEditing ? <input className="w-full bg-transparent border-b border-indigo-200" value={data.m51Data.brief.usp} onChange={(e) => updateM51('brief', -1, 'usp', e.target.value)} /> : data.m51Data.brief.usp}
+                                                                </div>
                                                             </div>
                                                             <div>
                                                                 <div className="text-[10px] font-black text-indigo-500 mb-1">BENEFIT 約束する価値</div>
-                                                                <div className="font-bold text-slate-800 leading-snug">{data.m51Data.brief.benefit}</div>
+                                                                <div className="font-bold text-slate-800 leading-snug">
+                                                                    {isEditing ? <input className="w-full bg-transparent border-b border-indigo-200" value={data.m51Data.brief.benefit} onChange={(e) => updateM51('brief', -1, 'benefit', e.target.value)} /> : data.m51Data.brief.benefit}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1996,8 +2491,10 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                                     <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 text-[10px] flex items-center justify-center mr-4 mt-1 font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors flex-shrink-0">
                                                                         {i + 1}
                                                                     </div>
-                                                                    <div className="font-bold text-slate-800 group-hover:text-indigo-900 transition-colors leading-relaxed">
-                                                                        {h}
+                                                                    <div className="flex-1 font-bold text-slate-800 group-hover:text-indigo-900 transition-colors leading-relaxed">
+                                                                        {isEditing ? (
+                                                                            <input className="w-full bg-transparent border-b border-amber-200 focus:outline-none" value={h} onChange={(e) => updateM51('headlines', i, null, e.target.value)} />
+                                                                        ) : h}
                                                                     </div>
                                                                 </div>
                                                             ))}
@@ -2012,11 +2509,15 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         {data.m51Data.prompts.map((p, i) => (
                                                             <div key={i} className="bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
                                                                 <div className="px-5 py-3 bg-slate-100/50 border-b border-slate-200 flex items-center justify-between">
-                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{p.title}</span>
+                                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                                                        {isEditing ? <input className="bg-transparent border-b border-slate-300 w-1/3" value={p.title} onChange={(e) => updateM51('prompts', i, 'title', e.target.value)} /> : p.title}
+                                                                    </span>
                                                                     <button className="text-[10px] font-bold text-indigo-600 hover:underline">Copy Prompt</button>
                                                                 </div>
                                                                 <div className="p-5 font-mono text-[10px] text-slate-400 leading-relaxed max-h-32 overflow-y-auto">
-                                                                    {p.body}
+                                                                    {isEditing ? (
+                                                                        <textarea className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-600 resize-none h-auto" rows={4} value={p.body} onChange={(e) => updateM51('prompts', i, 'body', e.target.value)} />
+                                                                    ) : p.body}
                                                                 </div>
                                                             </div>
                                                         ))}
@@ -2059,17 +2560,19 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                         <div key={i} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative overflow-hidden group hover:shadow-lg transition-all">
                                                             <Twitter className="absolute top-6 right-6 text-blue-50 opacity-0 group-hover:opacity-100 transition-opacity" size={32} />
                                                             <div className="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest mb-4">
-                                                                {p.type} POST
+                                                                {isEditing ? <input className="bg-transparent border-b border-blue-200 w-16" value={p.type} onChange={(e) => updateM52('xPosts', i, 'type', e.target.value)} /> : p.type} POST
                                                             </div>
                                                             <div className="text-sm text-slate-700 font-medium leading-relaxed">
-                                                                <MarkdownText text={p.draft} />
+                                                                {isEditing ? (
+                                                                    <textarea className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-800 resize-none h-auto font-sans" rows={6} value={p.draft} onChange={(e) => updateM52('xPosts', i, 'draft', e.target.value)} />
+                                                                ) : <MarkdownText text={p.draft} />}
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+                                            <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-6 rounded-3xl text-white shadow-2xl relative overflow-hidden">
                                                 <div className="absolute top-0 right-0 p-12 opacity-5 blur-xl pointer-events-none">
                                                     <TrendingUp size={180} />
                                                 </div>
@@ -2079,7 +2582,9 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                                                 </h3>
                                                 <div className="max-w-xl mx-auto space-y-4">
                                                     <div className="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-center font-bold text-lg">
-                                                        {data.m52Data.funnelDesign}
+                                                        {isEditing ? (
+                                                            <textarea className="w-full bg-transparent border-none focus:ring-0 p-0 text-white text-center resize-none" rows={3} value={data.m52Data.funnelDesign} onChange={(e) => updateM52('funnelDesign', -1, null, e.target.value)} />
+                                                        ) : data.m52Data.funnelDesign}
                                                     </div>
                                                     <div className="text-center text-[10px] text-indigo-300 font-black uppercase tracking-[0.3em]">
                                                         educational marketing path
@@ -2317,11 +2822,11 @@ export default function Dashboard({ analysis, onRestart, onUpdate }: DashboardPr
                         </div>
                     </motion.div>
                 )}
-
                 {/* Generating Feedback Overlay */}
                 {isGenerating && <GeneratingOverlay />}
-            </main>
         </div>
+        </main >
+    </div >
     );
-}
+};
 

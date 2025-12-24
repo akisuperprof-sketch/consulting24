@@ -13,80 +13,112 @@ export interface AnalysisResult {
         name: string;
         reason: string;
     }[];
-    // Detailed data for M00 Structure
+    // M00: 構造化
     m00Data?: {
         problems: string[];
         goals: string[];
         constraints: string[];
         assumptions: string[];
     };
-    // Detailed data for M10 Market Analysis
+    // M10: 市場環境・競合インテリジェンス
     m10Data?: {
-        marketSize: string;
-        growthRate: string;
-        competitors: { name: string; share: number; strength: string }[];
-        trends: string[];
+        marketAnalysis: { factor: string; impact: string; source: string }[];
+        competitors: { name: string; share: number; strength: string; weakness: string; strategy: string }[];
+        trends: { keyword: string; growth: string; platform: string; reasoning: string }[];
+        evidence: { title: string; url: string; date: string }[];
     };
-    // Detailed data for M20 Sales Strategy
-    m20Data?: {
-        targetPersona: string;
-        coreValue: string;
-        channels: string[];
-        actionPlans: { task: string; priority: "High" | "Mid" | "Low" }[];
-    };
-    // Detailed data for M30 Business Plan
-    m30Data?: {
-        plSimulation: { year: number; revenue: number; profit: number }[];
-        milestones: { phase: string; date: string; event: string }[];
-        fundingNeeds: string;
-    };
-    // Detailed data for M40 Operation
-    m40Data?: {
-        currentFlow: string[];
-        bottlenecks: string[];
-        improvementPlan: string[];
-    };
-    // Detailed data for M50 SNS/Content
-    m50Data?: {
-        themes: string[];
-        schedule: string[];
-        kpis: { metric: string; target: string }[];
-    };
-    // Detailed data for M60 App/System
-    m60Data?: {
-        concept: string;
-        features: string[];
-        techStack: string[];
-    };
-    // Detailed data for M91 Simulation
-    m91Data?: {
-        scenarios: { name: string; result: string; probability: string }[];
-        parameters: { name: string; value: string }[];
-    };
-    // Detailed data for M21 Seminar/Sales Design
-    m21Data?: {
-        seminarStructure: { section: string; content: string; keyTalk: string }[];
-        sessionFlow: { phase: string; purpose: string; script: string }[];
-        closingStrategy: string;
-    };
-    // Detailed data for M51 Copywriting
-    m51Data?: {
-        headlines: string[];
-        brief: { target: string; usp: string; benefit: string };
-        prompts: { title: string; body: string }[];
-    };
-    // Detailed data for M52 SNS Traffic
-    m52Data?: {
-        xPosts: { type: string; draft: string }[];
-        funnelDesign: string;
-    };
-    // Detailed data for M12 Trends/Keywords
+    // M12: 検索エンジン・キーワード戦略
     m12Data?: {
         trendingKeywords: { word: string; volume: string; growth: string }[];
         relatedQueries: string[];
         platformStrategy: { platform: string; approach: string }[];
     };
-    // Detailed data for M99 Custom
+    // M20: 販売戦略・成約導線
+    m20Data?: {
+        targetPersona: { profile: string; painPoints: string[]; gainPoints: string[] };
+        strategy: { coreValue: string; channels: string[]; pricing: string };
+        salesFlow: { step: string; purpose: string; script: string }[];
+        actionPlans: { task: string; priority: "High" | "Mid" | "Low"; deadline: string }[];
+    };
+    // M21: セミナー・商談設計
+    m21Data?: {
+        seminarStructure: { section: string; content: string; keyTalk: string }[];
+        sessionFlow: { phase: string; purpose: string; script: string }[];
+        closingStrategy: string;
+    };
+    // M30: 事業収支・資金調達
+    m30Data?: {
+        executiveSummary: string;
+        plSimulation: { year: number; revenue: number; profit: number; note: string }[];
+        milestones: { date: string; event: string; phase: string; requirement: string }[];
+        fundingPlan: { method: string; amount: string; institutionalSupport: string }[];
+        teamProfile: { role: string; background: string; strength: string }[];
+        riskAnalysis: { factor: string; impact: string; solution: string }[];
+    };
+    // M40: 業務改善
+    m40Data?: {
+        currentBottlenecks: string[];
+        improvementFlow: { before: string; after: string; tool: string }[];
+        costReduction: string;
+    };
+    // M50: コンテンツ・SNS戦略
+    m50Data?: {
+        snsStrategy: { platform: string; frequency: string; kpis: { metric: string; target: string }[] }[];
+        contentThemes: string[];
+        headlines: string[];
+        funnelDesign: { stage: string; action: string; prompt: string }[];
+        lineMarketing?: {
+            tagDesign: { name: string; condition: string; meaning: string }[];
+            stepMessages: { day: number; title: string; content: string }[];
+            actionTriggers: { label: string; action: string }[];
+            kpiTargets: { metric: string; target: string; current?: string }[];
+        };
+    };
+    // M51: コピーライティング・訴求設計
+    m51Data?: {
+        headlines: string[];
+        brief: { target: string; usp: string; benefit: string };
+        prompts: { title: string; body: string }[];
+    };
+    // M52: SNS運用・拡散
+    m52Data?: {
+        xPosts: { type: string; draft: string }[];
+        funnelDesign: string;
+    };
+    // M60: プロダクト要件・技術仕様 (Expanded)
+    m60Data?: {
+        systemDefinition?: {
+            name: string;
+            purpose: string;
+            successDefinition: string;
+            targetUser: string;
+        };
+        concept: string;
+        userFlow: { action: string; response: string }[];
+        features: { name: string; priority: string; description: string }[];
+        techStack: { category: string; selection: string; reason: string }[];
+        dbSchema?: { table: string; columns: { name: string; type: string; note: string }[] }[];
+        apiDesign?: { endpoint: string; method: string; summary: string }[];
+        security?: { roles: string[]; auth: string; measures: string[] };
+        maintenance?: { monitoring: string; backup: string };
+        constraints?: string[];
+    };
+    // M90: 戦略提案書 (1枚のコンサルシート)
+    m90Data?: {
+        executiveSummary: string;
+        strategicVision: string;
+        coreCompetitiveAdvantage: string;
+        marketOpportunity: string;
+        roadmapSummary: string;
+        financialHighlights: string;
+        conclusion: string;
+    };
+    // M91: Simulation
+    m91Data?: {
+        scenarios: { name: string; result: string; probability: string }[];
+        parameters: { name: string; value: string; impact: string }[];
+    };
+    // M99: Custom
     m99Data?: {
         overview: string;
         details: string[];
@@ -210,222 +242,142 @@ ${Object.values(MODULES).map(m => `- ${m.id}: ${m.name} (${m.description})`).joi
 }
 
 function simulateAnalysis(goals: string[], freeText: string): AnalysisResult {
-    const isStartup = freeText.includes("創業") || freeText.includes("資金") || goals.includes("finance") || goals.includes("bizplan");
+    const isStartup = freeText.includes("創業") || freeText.includes("投資") || freeText.includes("資金") || goals.includes("finance") || goals.includes("bizplan");
     const isPersonal = freeText.includes("副業") || freeText.includes("個人") || goals.includes("sns");
-    const isCorporate = freeText.includes("法人") || freeText.includes("効率") || goals.includes("efficiency");
+    const isTech = freeText.includes("アプリ") || freeText.includes("システム") || goals.includes("app") || goals.includes("spec") || freeText.includes("仕様");
 
     const selected: AnalysisResult["selectedModules"] = [
-        { id: "M00", name: MODULES.M00.name, reason: "全てのプロジェクトの基盤となる構造化のため" }
+        { id: "M00", name: MODULES.M00.name, reason: "プロジェクトの全体像と制約条件の定義のため" },
+        { id: "M10", name: MODULES.M10.name, reason: "事実に基づく市場・競合情報のインテリジェンス提供" },
+        { id: "M20", name: MODULES.M20.name, reason: "成約率を最大化するセールスフローと戦略の立案" },
+        { id: "M50", name: MODULES.M50.name, reason: "拡散・集客を担うコンテンツファンネルの設計" }
     ];
 
-    if (goals.includes("revenue") || goals.includes("strategy") || freeText.includes("売上") || freeText.includes("集客") || freeText.includes("顧客")) {
-        selected.push({ id: "M20", name: MODULES.M20.name, reason: "売上不振の直接的な打開策を立案するための戦略策定モジュール" });
+    if (isStartup || goals.includes("bizplan")) {
+        selected.push({ id: "M30", name: MODULES.M30.name, reason: "事業収支とマイルストーン、資金調達の最適化" });
+    } else if (isTech) {
+        selected.push({ id: "M60", name: MODULES.M60.name, reason: "開発要件と技術アーキテクチャの定義" });
     }
-
-    if (freeText.includes("競合") || freeText.includes("市場") || goals.includes("strategy") || freeText.includes("PEST") || freeText.includes("分析")) {
-        selected.push({ id: "M11", name: MODULES.M11.name, reason: "市場環境と競合状況の客観的な把握が必要なため" });
-        selected.push({ id: "M10", name: MODULES.M10.name, reason: "広範な市場トレンドとセグメント探索のため" });
-    }
-
-    if (isStartup || freeText.includes("事業計画") || goals.includes("bizplan") || freeText.includes("融資")) {
-        selected.push({ id: "M30", name: MODULES.M30.name, reason: "公的機関や金融機関への提出を見据えた事業計画の整理" });
-        selected.push({ id: "M31", name: MODULES.M31.name, reason: "最適な資金調達手段の選定と制度の整理" });
-    }
-
-    if (freeText.includes("コンテンツ") || freeText.includes("記事") || freeText.includes("SNS") || goals.includes("sns") || freeText.includes("LINE")) {
-        selected.push({ id: "M50", name: MODULES.M50.name, reason: "発信内容の具体化と運用設計の支援" });
-    }
-
-    if (freeText.includes("コピー") || freeText.includes("文章") || freeText.includes("プロンプト") || freeText.includes("LP")) {
-        selected.push({ id: "M51", name: MODULES.M51.name, reason: "心理学に基づいた『売れる文章』の自動生成と型作り" });
-    }
-
-    if (freeText.includes("拡散") || freeText.includes("X") || freeText.includes("Twitter") || freeText.includes("マーケティング")) {
-        selected.push({ id: "M52", name: MODULES.M52.name, reason: "教育マーケティングによるSNSからの成約率向上設計" });
-    }
-
-    if (freeText.includes("セミナー") || freeText.includes("相談") || freeText.includes("セールス") || freeText.includes("個別")) {
-        selected.push({ id: "M21", name: MODULES.M21.name, reason: "売り込まずに決まるセミナー・商談の導線設計" });
-    }
-
-    if (freeText.includes("アプリ") || freeText.includes("システム") || goals.includes("app") || goals.includes("spec") || freeText.includes("仕様")) {
-        selected.push({ id: "M60", name: MODULES.M60.name, reason: "開発要件と画面構成の定義支援" });
-    }
-
-    if (isCorporate || freeText.includes("効率") || freeText.includes("DX") || goals.includes("事務") || goals.includes("efficiency")) {
-        selected.push({ id: "M40", name: MODULES.M40.name, reason: "業務プロセスの棚卸しと効率化案の提示" });
-    }
-
-    if (freeText.includes("シミュレーション") || freeText.includes("数値") || freeText.includes("計算") || freeText.includes("収支")) {
-        selected.push({ id: "M91", name: MODULES.M91.name, reason: "数値シミュレーションによる妥当性検証のため" });
-    }
-
-    // Deduplicate and limit to 5
-    const uniqueMap = new Map();
-    selected.forEach(m => uniqueMap.set(m.id, m));
-    const uniqueSelected = Array.from(uniqueMap.values()).slice(0, 5);
-
-    // Context-sensitive Data Generation
-    const m10Data = isStartup ? {
-        marketSize: "2,500億円 (年平均成長率 15.2%)",
-        growthRate: "+120% (YoY)",
-        competitors: [
-            { name: "Unicorn A", share: 45, strength: "ネットワーク効果" },
-            { name: "Incumbent B", share: 30, strength: "顧客基盤" },
-            { name: "New Entry C", share: 5, strength: "低価格" }
-        ],
-        trends: ["AIによる自動化の加速", "CtoC取引の拡大", "法規制の緩和"]
-    } : {
-        marketSize: "1,200億円 (安定推移)",
-        growthRate: "+2.5% (YoY)",
-        competitors: [
-            { name: "大手A社", share: 60, strength: "ブランド力" },
-            { name: "地場B社", share: 20, strength: "地域密着" },
-            { name: "ネット専業C", share: 10, strength: "価格競争力" }
-        ],
-        trends: ["高齢化による需要変化", "原材料費の高騰", "職人不足"]
-    };
-
-    const m30Data = isStartup ? {
-        plSimulation: [
-            { year: 1, revenue: 0, profit: -8000000 },
-            { year: 2, revenue: 50000000, profit: -2000000 },
-            { year: 3, revenue: 120000000, profit: 30000000 }
-        ],
-        milestones: [
-            { phase: "Seed", date: "2024/Q2", event: "MVPリリース・検証" },
-            { phase: "Series A", date: "2025/Q1", event: "PMF達成・組織拡大" },
-            { phase: "Series B", date: "2026/Q3", event: "全国展開・黒字化" }
-        ],
-        fundingNeeds: "向こう18ヶ月で3,000万円（人件費: 1,500万、マーケ: 1,000万、その他: 500万）"
-    } : isPersonal ? {
-        plSimulation: [
-            { year: 1, revenue: 1200000, profit: 1000000 },
-            { year: 2, revenue: 1800000, profit: 1500000 },
-            { year: 3, revenue: 2400000, profit: 2100000 }
-        ],
-        milestones: [
-            { phase: "検証期", date: "1ヶ月目", event: "サービス設計・集客開始" },
-            { phase: "成長期", date: "4ヶ月目", event: "月収5万円達成" },
-            { phase: "安定期", date: "12ヶ月目", event: "月収10万円達成" }
-        ],
-        fundingNeeds: "初期投資として5-10万円（PC・学習費）を想定。自己資金で賄えるスモールスタート構成。"
-    } : {
-        plSimulation: [
-            { year: 1, revenue: 30000000, profit: 3000000 },
-            { year: 2, revenue: 35000000, profit: 5000000 },
-            { year: 3, revenue: 42000000, profit: 8000000 }
-        ],
-        milestones: [
-            { phase: "基盤強化", date: "3ヶ月後", event: "新システム安定稼働" },
-            { phase: "販路拡大", date: "6ヶ月後", event: "新規エリアへの出店" },
-            { phase: "多角化", date: "1年後", event: "新商品ラインナップ追加" }
-        ],
-        fundingNeeds: "設備投資として500万円（自己資金＋公庫融資）"
-    };
-
-    const m40Data = isCorporate ? {
-        currentFlow: ["FAX受注", "基幹システム手入力", "在庫確認(電話)", "出荷指示書作成"],
-        bottlenecks: ["手入力による誤発注(月3件)", "電話確認の待機時間", "紙ベースの保管コスト"],
-        improvementPlan: ["Web受発注システムの導入", "在庫連携APIの実装", "完全ペーパーレス化"]
-    } : {
-        currentFlow: ["問い合わせ確認", "個別メール返信", "入金確認", "サービス提供"],
-        bottlenecks: ["返信漏れ", "入金消し込みの手間", "リマインド忘れ"],
-        improvementPlan: ["自動送信ツールの活用", "決済リンクの自動発行", "タスク管理一元化"]
-    };
-
-    const m21Data = {
-        seminarStructure: [
-            { section: "問題の深刻化", content: "『今のままは、さすがにマズい』という共通認識を作る", keyTalk: "「AI時代、このままの速度で作業し続けると、3年後に市場価値はどうなりますか？」" },
-            { section: "解決策の提示", content: "『これなら自分にもできそう』という確信を作る", keyTalk: "「やることは1つだけ。型を作って、毎日回す。それだけです。」" },
-            { section: "出口設計", content: "個別相談への2択誘導（導入診断）", keyTalk: "「あなた専用の最初の一歩を、相談会で一緒に決めましょう。」" }
-        ],
-        sessionFlow: [
-            { phase: "冒頭・安心設計", purpose: "時間と目的の合意", script: "「今日は45分で、あなたに効く導入順を決めます。全員には提案しません。」" },
-            { phase: "KGI/KPI設定", purpose: "意味の言語化", script: "「その時間が浮いたら、本当は何に使いたいですか？」" },
-            { phase: "梯子落とし", purpose: "一人では難しい現実の提示", script: "「独学が難しいのは意志ではなく、環境と型がない構造上の問題です。」" }
-        ],
-        closingStrategy: "説得ではなく、確認（『必要だと感じていますか？』の一点突破）"
-    };
-
-    const m51Data = {
-        headlines: [
-            "【数字入り】AI導入で作業時間を月40時間削減した3つのステップ",
-            "【好奇心】なぜ、あなたの生成AIは『薄い文章』しか出さないのか？",
-            "【救済】売れる文章を書こうと思うほど、手が止まるあなたへ"
-        ],
-        brief: {
-            target: isPersonal ? "副業で月10万を目指す会社員" : "DX推進に悩む中小企業のリーダー",
-            usp: "コピーライティング歴10年の知見×AIプロンプトの融合",
-            benefit: "『それっぽい』ではなく『売れる意図』が通った文章が3分で完成する"
-        },
-        prompts: [
-            { title: "コピー設計ブリーフ生成", body: "あなたは戦略家です。商材の詳細からペルソナとUSPを抽出してください..." },
-            { title: "一括コピー生成マスター", body: "ブリーフを元に、見出し20個、リード文、CTAをA/Bテスト前提で出力せよ..." }
-        ]
-    };
-
-    const m52Data = {
-        xPosts: [
-            { type: "教育", draft: "AIを使える人と、AIに飲み込まれる人の差。それは『指示力』ではなく『設計力』にある..." },
-            { type: "共感", draft: "昔の僕は、1記事書くのに3日かかってました。でも、型を作ってからは30分で終わります。" },
-            { type: "拡散", draft: "【保存版】誰でも売れる文章が書ける『コピー設計図』を公開します（リプ欄にnoteリンク）" }
-        ],
-        funnelDesign: "X（日々教育・悩み解決）→ note（深い納得・実績提示）→ 公式LINE（限定オファー・個別相談）"
-    };
-    const m60Data = {
-        concept: isStartup ? "業界初のAIマッチングアプリ" : "既存会員向け会員証アプリ",
-        features: ["ログイン/認証", "プッシュ通知", "マイページ", isStartup ? "AIマッチング" : "ポイント管理", "決済機能"],
-        techStack: ["Flutter (Cross Platform)", "Firebase (Backend)", "Stripe (Payment)"]
-    };
 
     return {
-        refinedGoal: freeText.length > 5 ? freeText.substring(0, 30) + "..." : "プロジェクトの構造化と戦略立案",
-        problemStructure: freeText || "現状の課題は、リソースの分散と優先順位の不明確さにあります。AIによる構造化を通じて、最もインパクトの大きい施策に集中できる環境を整えます。",
-        selectedModules: uniqueSelected,
+        refinedGoal: isPersonal ? "個人の専門性を収益化し、月50万円の安定した副収入源を構築する" : "AI技術を活用した新規事業を立ち上げ、1年以内にPMFを達成し、シリーズA規模の資金調達を目指す",
+        problemStructure: "市場の飽和により単純な機能差別化は限界。独自の『信頼獲得プロセス』と『AIによる個別体験の最適化』が市場突破のクリティカルパスとなる。",
+        selectedModules: selected.slice(0, 5),
+        aiNote: "この計画は市場トレンドと競合状況を考慮した最短経路の戦略です。特に『M20：成約導線』の構築が売上直結の最優先課題です。",
+        tags: ["Growth", "Scale", "AI-Strategy"],
         m00Data: {
-            problems: isStartup
-                ? ["PMF（市場適合）未達成", "ランウェイ（資金）の枯渇懸念", "開発リソース不足"]
-                : ["既存事業の成長鈍化", "アナログ業務による非効率", "新規客の獲得コスト増"],
-            goals: isStartup
-                ? ["月次成長率20%の達成", "次回ラウンドでの資金調達", "コアファンの獲得"]
-                : ["業務時間30%削減", "粗利率の5pt改善", "既存顧客単価アップ"],
-            constraints: ["限られた予算", "即効性が求められる", "人的リソースの制約"],
-            assumptions: ["潜在需要は確実に存在する", "競合はまだ本格参入していない"]
+            problems: ["集客の不安定性", "提供価値のコモディティ化", "リピート率の低さ"],
+            goals: ["月次売上の安定", "ブランド認知の向上", "LTVの30%向上"],
+            constraints: ["初期投資額500万円以内", "少人数体制での運営", "3ヶ月以内でのローンチ"],
+            assumptions: ["ターゲット市場の成長率は年10%以上", "主要SNSのリーチアルゴリズムの大きな変更がないこと"]
         },
-        m10Data,
+        m10Data: {
+            marketAnalysis: [
+                { factor: "PEST: Social", impact: "個のリスキリング需要が加速", source: "経済産業省：新機軸のスキル市場調査 (2024)" },
+                { factor: "3C: Competitor", impact: "既存大手がカバーできない『個別調整』へのニーズ", source: "User Interview Data (N=45)" }
+            ],
+            competitors: [
+                { name: "既存プラットフォーマーA", share: 55, strength: "ドメイン権威性", weakness: "個別化の欠如", strategy: "ニッチセグメントでの高付加価値化で対抗" },
+                { name: "新興テック企業B", share: 12, strength: "UI/UXのモダンさ", weakness: "信頼・実績不足", strategy: "事例の透明性とサポート厚遇による差別化" }
+            ],
+            trends: [
+                { keyword: "AI Agency", growth: "+180%", platform: "LinkedIn / X", reasoning: "B2BでのAI導入を支援する実働部隊への需要急増" },
+                { keyword: "Micro-SaaS", growth: "+90%", platform: "Product Hunt", reasoning: "単一の痛みを解決する軽量ツールの需要増" }
+            ],
+            evidence: [
+                { title: "DX白書 2024 (IPA)", url: "https://www.ipa.go.jp/publish/whitepaper/dx.html", date: "2024-03" },
+                { title: "Crunchbase: AI Investment Trends", url: "https://www.crunchbase.com/", date: "2024-05" }
+            ]
+        },
         m20Data: {
-            targetPersona: isPersonal ? "「なんとなく不安」を抱える20代後半" : "決裁権を持つ中小企業経営者",
-            coreValue: isStartup ? "業界を破壊する圧倒的なユーザー体験" : "創業50年の信頼と確かな技術力",
-            channels: isPersonal ? ["Instagramリール", "note", "YouTube Shorts"] : ["展示会", "業界紙", "代理店営業"],
+            targetPersona: {
+                profile: "30代、ITリテラシー中程度の会社員。将来のキャリアに不安を感じ、自らの専門性を活かした副業や独立を模索している。",
+                painPoints: ["具体的ステップが不明", "時間的リソースの限界", "技術的障壁"],
+                gainPoints: ["専門性の体系化", "自動収益フローの構築", "コミュニティ参加"]
+            },
+            strategy: {
+                coreValue: "AIを活用したパーソナライズ・キャリア・ストラテジー",
+                channels: ["X / Note (教育)", "限定Webinar (納得)", "個別Zoom相談 (成約)"],
+                pricing: "298,000円 (3ヶ月コーチングプラン)"
+            },
+            salesFlow: [
+                { step: "認知 (SNS)", purpose: "専門性の認知と教育", script: "AI時代のサバイバルスキルを公開中" },
+                { step: "比較 (Webinar)", purpose: "手法の有効性の証明", script: "私が実践した最短経路のロードマップを解説" },
+                { step: "決断 (相談会)", purpose: "個別の不安払拭とクロージング", script: "あなたの現状なら、このステップが最適です" }
+            ],
             actionPlans: [
-                { task: "ターゲットへのヒアリング（N=5）", priority: "High" },
-                { task: "競合サービスの徹底分析と比較表作成", priority: "High" },
-                { task: "MVP（最小機能版）の仕様策定", priority: "Mid" }
+                { task: "LPプロトタイプ作成", priority: "High", deadline: "Week 2" },
+                { task: "N=1ヒアリングの実施", priority: "High", deadline: "Week 1" },
+                { task: "広告運用テスト開始", priority: "Mid", deadline: "Week 4" }
             ]
         },
-        m30Data,
-        m40Data,
+        m30Data: {
+            executiveSummary: "本事業は、労働集約的なモデルから脱却し、AIによる自動化と専門性の掛け合わせにより、高い営業利益率（40%超）を早期に実現する高収益型モデルを目指します。",
+            plSimulation: [
+                { year: 1, revenue: 12000000, profit: 4000000, note: "初期投資と認知獲得フェーズ。赤字を抑えたスモールスタート。" },
+                { year: 2, revenue: 48000000, profit: 22000000, note: "LTVの向上と紹介・リピートによる広告費の効率化。" }
+            ],
+            milestones: [
+                { date: "2024-10", event: "MVPリリース", requirement: "アクティブユーザー50名获得", phase: "Launch" },
+                { date: "2025-04", event: "シリーズA資金調達", requirement: "月次売上400万円の安定達成", phase: "Scale" }
+            ],
+            fundingPlan: [
+                { method: "日本政策金融公庫（創業融資）", amount: "1,500万円", institutionalSupport: "中小企業経営強化法に基づく支援あり" },
+                { method: "IT導入補助金", amount: "450万円", institutionalSupport: "通常枠にて申請予定" }
+            ],
+            teamProfile: [
+                { role: "CEO/Founder", background: "大手コンサル出身、新規事業立ち上げ経験者", strength: "戦略立案、人脈" },
+                { role: "Product/AI Lead", background: "フルスタックエンジニア、AI開発経験5年", strength: "迅速なプロトタイピング、技術選定" }
+            ],
+            riskAnalysis: [
+                { factor: "競合大手の参入", impact: "High", solution: "コミュニティ化によるスイッチングコストの増大" },
+                { factor: "AI精度への依存", impact: "Mid", solution: "人間の専門家による最終監修プロセスの組み込み" }
+            ]
+        },
         m50Data: {
-            themes: isPersonal
-                ? ["副業の始め方", "失敗談", "収益公開"]
-                : ["専門知識の解説", "お客様の声", "開発裏話"],
-            schedule: ["毎日 20:00", "土日は朝・夜 2回"],
-            kpis: [
-                { metric: "フォロワー増加数", target: "+500/月" },
-                { metric: "エンゲージメント率", target: "5.0%" },
-                { metric: "CV数", target: "10件/月" }
+            snsStrategy: [
+                { platform: "X (Twitter)", frequency: "1日3回投稿", kpis: [{ metric: "公式LINEへの遷移率", target: "3.0%" }] },
+                { platform: "Instagram", frequency: "2日に1回投稿", kpis: [{ metric: "保存数", target: "150件/投稿" }] }
+            ],
+            contentThemes: ["AI×キャリア時短術", "業界の裏側暴露", "成功事例の言語化"],
+            headlines: ["【必読】AIで年収を2倍にした3つの習慣", "まだその作業、手動でやってるの？"],
+            funnelDesign: [
+                { stage: "認知 (ToFU)", action: "無料プレゼント配布", prompt: "リード獲得用電子書籍の目次案を作成" },
+                { stage: "信頼 (MoFU)", action: "3日間LINE講座", prompt: "教育用ステップメール案（DAY1-3）を生成" }
             ]
         },
-        m21Data,
-        m51Data,
-        m52Data,
-        m60Data,
-        theme: freeText || "事業構想",
-        aiNote: isStartup
-            ? "スタートアップにおいてはスピードが命です。M30で資金計画を固めつつ、M50で認知を広げる同時並行アプローチを推奨します。"
-            : "既存の強みを活かしつつ、M40での業務効率化で利益体質を作り、生まれた余力をM20の新規開拓に回すのが定石です。",
-        tags: isStartup ? ["急成長", "資金調達", "ピボット"] : ["業務改善", "利益率向上", "DX"]
+        m60Data: {
+            concept: "AIをコーチとして伴走させるキャリア設計プラットフォーム",
+            userFlow: [
+                { action: "プロフィール・スキル入力", response: "パーソナライズされた課題と適性の抽出" },
+                { action: "チャットベースの相談", response: "リアルタイムの戦略提案とタスク生成" }
+            ],
+            features: [
+                { name: "AIキャリア診断", priority: "P0", description: "独自の多角形アルゴリズムによる適正判定" },
+                { name: "自動タスク生成", priority: "P1", description: "ガントチャート形式の実行プラン自動作成" }
+            ],
+            techStack: [
+                { category: "Frontend", selection: "Next.js 14", reason: "SEO性能とVercel連携の容易さ" },
+                { category: "Backend/AI", selection: "Gemini 1.5 Pro + Vercel AI SDK", reason: "高度な推論とストリーミング対応" },
+                { category: "Infrastructure", selection: "Supabase (PostgreSQL)", reason: "リアルタイム機能と認証機能の内包" }
+            ],
+            dbSchema: [
+                { table: "users", columns: [{ name: "id", type: "uuid", note: "PK" }, { name: "email", type: "varchar", note: "Unique" }, { name: "subscription_status", type: "varchar", note: "Free/Pro" }] },
+                { table: "analysis_history", columns: [{ name: "id", type: "uuid", note: "PK" }, { name: "user_id", type: "uuid", note: "FK" }, { name: "result_json", type: "jsonb", note: "Main Data" }, { name: "created_at", type: "timestamp", note: "Initial date" }] }
+            ],
+            apiDesign: [
+                { endpoint: "/api/analyze", method: "POST", summary: "ユーザーデータに基づいたAI分析の実行" }
+            ]
+        },
+        m90Data: {
+            executiveSummary: "本提案は、AI時代における『個の専門性』の価値を最大化し、効率的かつ持続可能な収益源を構築するための包括的戦略です。",
+            strategicVision: "業界の常識を覆すAI伴走型モデルにより、1年以内に市場シェア10%獲得を目指す。",
+            coreCompetitiveAdvantage: "AIによる個別体験の極致。競合他社が提供できない『24時間365日のパーソナライズ伴走』。",
+            marketOpportunity: "リスキリング市場の急速な拡大と、既存の教育サービスの個別化不足。ここにある数千億円規模のギャップを射抜きます。",
+            roadmapSummary: "3ヶ月でMVP検証、6ヶ月でコミュニティ化、12ヶ月でプラットフォーム化。",
+            financialHighlights: "2年目で売上4,800万円、利益率45%超の見込み。キャッシュフローの早期安定化。",
+            conclusion: "これは単なる計画ではなく、未来への投資です。技術と専門性の融合により、揺るぎない市場ポジションを確立します。"
+        }
     };
 }
 
