@@ -376,7 +376,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                         </nav>
                     </div>
 
-                    <div className="mt-auto p-6 space-y-4 text-center">
+                    <div className="mt-auto p-6 space-y-4 text-center pb-24 lg:pb-6">
                         <button
                             onClick={onRestart}
                             className="w-full flex items-center justify-center px-4 py-3 bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-xl transition-all border border-slate-100 group"
@@ -409,7 +409,7 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                             </button>
                         )}
                         {!isPresentationMode && <span className="text-slate-400 print:hidden hidden sm:inline">プロジェクト /</span>}
-                        <span className={cn("font-bold text-slate-900 text-lg lg:text-xl print:text-3xl truncate transition-all", isPresentationMode && "text-2xl lg:text-3xl")}>{data.refinedGoal}</span>
+                        <span className={cn("font-bold text-slate-900 text-lg lg:text-xl print:text-3xl truncate transition-all max-w-[200px] lg:max-w-md", isPresentationMode && "text-2xl lg:text-3xl max-w-full")}>{data.refinedGoal}</span>
                     </div>
                     <div className="flex items-center space-x-2 lg:space-x-4 print:hidden">
                         {isPresentationMode ? (
@@ -707,57 +707,74 @@ export default function Dashboard({ analysis, onRestart }: DashboardProps) {
                                             </div>
                                             {/* M30: Business Plan (Simulation) */}
                                             <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] relative overflow-hidden">
-                                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                                <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-12 relative z-10 gap-6">
                                                     <div className="flex items-center space-x-4">
-                                                        <Calculator className="text-emerald-400" />
-                                                        <span className="font-bold">PL 5-Year Simulation (Dynamic)</span>
+                                                        <div className="p-3 bg-emerald-500/20 rounded-xl">
+                                                            <Calculator className="text-emerald-400" size={24} />
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-xl">5-Year PL Simulation</div>
+                                                            <div className="text-xs text-slate-400">Parameter Adjustment</div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex items-center space-x-6">
-                                                        <div className="flex flex-col">
-                                                            <label className="text-[10px] text-slate-400 mb-1">売上成長率 x{revenueMultiplier.toFixed(1)}</label>
+                                                    <div className="flex flex-col sm:flex-row items-center gap-6 bg-white/5 p-4 rounded-2xl border border-white/10">
+                                                        <div className="flex flex-col w-full sm:w-auto">
+                                                            <div className="flex justify-between mb-2">
+                                                                <label className="text-xs font-bold text-emerald-400">売上成長率</label>
+                                                                <span className="text-xs font-mono bg-emerald-500/20 px-2 rounded text-emerald-300">x{revenueMultiplier.toFixed(1)}</span>
+                                                            </div>
                                                             <input
-                                                                type="range" min="0.5" max="2.0" step="0.1"
+                                                                type="range" min="0.5" max="3.0" step="0.1"
                                                                 value={revenueMultiplier}
                                                                 onChange={(e) => setRevenueMultiplier(parseFloat(e.target.value))}
-                                                                className="w-32 accent-emerald-500"
+                                                                className="w-40 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                                                             />
                                                         </div>
-                                                        <div className="flex flex-col">
-                                                            <label className="text-[10px] text-slate-400 mb-1">コスト係数 x{costMultiplier.toFixed(1)}</label>
+                                                        <div className="w-px h-8 bg-white/10 hidden sm:block" />
+                                                        <div className="flex flex-col w-full sm:w-auto">
+                                                            <div className="flex justify-between mb-2">
+                                                                <label className="text-xs font-bold text-rose-400">コスト係数</label>
+                                                                <span className="text-xs font-mono bg-rose-500/20 px-2 rounded text-rose-300">x{costMultiplier.toFixed(1)}</span>
+                                                            </div>
                                                             <input
                                                                 type="range" min="0.5" max="2.0" step="0.1"
                                                                 value={costMultiplier}
                                                                 onChange={(e) => setCostMultiplier(parseFloat(e.target.value))}
-                                                                className="w-32 accent-rose-500"
+                                                                className="w-40 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-rose-500"
                                                             />
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <div className="grid grid-cols-5 gap-4 items-end h-48 relative z-10">
-                                                    {(simulatedPL || data.m30Data.plSimulation).map((d, i) => (
-                                                        <div key={i} className="flex flex-col justify-end h-full space-y-2 group">
-                                                            <div className="flex items-end space-x-1 h-full">
-                                                                <motion.div
-                                                                    initial={{ height: 0 }}
-                                                                    animate={{ height: `${(d.revenue / 5000) * 100}%` }}
-                                                                    transition={{ type: "spring", stiffness: 100 }}
-                                                                    className="w-full bg-emerald-500 rounded-t-lg opacity-80 group-hover:opacity-100 transition-opacity relative"
-                                                                >
-                                                                    <span className="absolute -top-6 left-0 w-full text-center text-xs font-bold text-emerald-300">
-                                                                        {d.revenue}
-                                                                    </span>
-                                                                </motion.div>
-                                                                <motion.div
-                                                                    initial={{ height: 0 }}
-                                                                    animate={{ height: `${(d.profit / 5000) * 100}%` }}
-                                                                    transition={{ type: "spring", stiffness: 100 }}
-                                                                    className="w-full bg-emerald-300 rounded-t-lg opacity-60 group-hover:opacity-100 transition-opacity"
-                                                                />
+                                                <div className="grid grid-cols-5 gap-4 items-end h-64 relative z-10 px-2">
+                                                    {(() => {
+                                                        const currentSim = simulatedPL || data.m30Data.plSimulation;
+                                                        const maxVal = Math.max(...currentSim.map(d => d.revenue)) * 1.2;
+
+                                                        return currentSim.map((d, i) => (
+                                                            <div key={i} className="flex flex-col justify-end h-full space-y-2 group">
+                                                                <div className="flex items-end space-x-1 h-full relative">
+                                                                    <motion.div
+                                                                        initial={{ height: 0 }}
+                                                                        animate={{ height: `${Math.min((d.revenue / maxVal) * 100, 100)}%` }}
+                                                                        transition={{ type: "spring", stiffness: 100 }}
+                                                                        className="w-full bg-emerald-500 rounded-t-lg opacity-80 group-hover:opacity-100 transition-opacity relative min-h-[10%]"
+                                                                    >
+                                                                        <span className="absolute -top-6 left-0 w-full text-center text-[10px] sm:text-xs font-bold text-emerald-300 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            {(d.revenue / 10000).toFixed(1)}万
+                                                                        </span>
+                                                                    </motion.div>
+                                                                    <motion.div
+                                                                        initial={{ height: 0 }}
+                                                                        animate={{ height: `${Math.min((d.profit / maxVal) * 100, 100)}%` }}
+                                                                        transition={{ type: "spring", stiffness: 100 }}
+                                                                        className="w-full bg-emerald-300 rounded-t-lg opacity-60 group-hover:opacity-100 transition-opacity min-h-[5%]"
+                                                                    />
+                                                                </div>
+                                                                <div className="text-center text-xs font-bold text-slate-500 border-t border-slate-700 pt-2">{d.year}年目</div>
                                                             </div>
-                                                            <div className="text-center text-xs font-bold text-slate-500">{d.year}年目</div>
-                                                        </div>
-                                                    ))}
+                                                        ));
+                                                    })()}
                                                 </div>
 
                                                 {/* Background decoration */}
