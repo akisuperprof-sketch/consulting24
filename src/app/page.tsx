@@ -17,7 +17,11 @@ import {
   Zap,
   ChevronDown,
   Beaker,
-  Trash2
+  Trash2,
+  History,
+  Clock,
+  X,
+  ChevronRight
 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -38,6 +42,8 @@ export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [showDevTools, setShowDevTools] = useState(false);
   const [hasHistory, setHasHistory] = useState(false);
+  const [showResumeModal, setShowResumeModal] = useState(false);
+  const [savedHistories, setSavedHistories] = useState<any[]>([]);
 
   // Persistence
   useEffect(() => {
@@ -240,10 +246,10 @@ export default function Home() {
                     const saved = localStorage.getItem("consulting_history");
                     if (saved) {
                       try {
-                        const reports = JSON.parse(saved);
-                        if (reports.length > 0) {
-                          setAnalysisResult(reports[0].data);
-                          setStep(5);
+                        const parsed = JSON.parse(saved);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                          setSavedHistories(parsed);
+                          setShowResumeModal(true);
                         }
                       } catch (e) { console.error(e); }
                     }
@@ -550,6 +556,36 @@ export default function Home() {
                 </motion.div>
               )}
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* History Selection Modal */}
+        <AnimatePresence>
+          {showResumeModal && (
+            <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                  <h3 className="font-bold text-lg text-slate-800 flex items-center">
+                    <History className="mr-2 text-slate-400" size={20} />
+                    再開するプロジェクトを選択
+                  </h3>
+                  <button onClick={() => setShowResumeModal(false)} className="p-2 hover:bg-slate-200 rounded-full transition-colors"><X size={20} /></button>
+                </div>
+                <div className="max-h-[60vh] overflow-y-auto p-2 space-y-2">
+                  {savedHistories.map((h: any, i: number) => (
+                    <button key={i} onClick={() => { setAnalysisResult(h.data); setStep(5); setShowResumeModal(false); }} className="w-full text-left p-4 hover:bg-blue-50 rounded-xl transition-colors group flex items-center justify-between border border-transparent hover:border-blue-100">
+                      <div>
+                        <div className="font-bold text-slate-800 text-sm mb-1 group-hover:text-blue-700 line-clamp-1">{h.title || "Untitled Project"}</div>
+                        <div className="text-[10px] text-slate-400 flex items-center font-mono">
+                          <Clock size={10} className="mr-1" /> {h.date}
+                        </div>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500" />
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
